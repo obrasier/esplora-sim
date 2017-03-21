@@ -16,6 +16,7 @@
 #define DEC 10
 #define HEX 16
 
+typedef uint8_t byte;
 // in Ardino.cpp
 
 void pinMode(int pin, int mode);
