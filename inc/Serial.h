@@ -28,5 +28,4 @@ private:
   uint32_t _baud_rate;
 
 };
-
 #endif

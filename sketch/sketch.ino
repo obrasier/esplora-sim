@@ -11,4 +11,7 @@ void loop() {
   // else
   //   Esplora.writeRGB(0, 0, 0);
   int x = digitalRead(10);
+  Serial.print("Pin 10 is: ");
+  Serial.println(x);
+  delay(1000);
 }

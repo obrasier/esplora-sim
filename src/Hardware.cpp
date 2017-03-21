@@ -5,7 +5,7 @@
 #include "Hardware.h"
 #include "global_variables.h"
 
-int x_pinValue[50] = {0};
+int x_pinValue[MAX_TOTAL_PINS] = {0};
 int x_leds[25] = {0};
 
 

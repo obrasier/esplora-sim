@@ -129,12 +129,12 @@ void serial::println(std::string s)
   const char *p;
   p = s.c_str();
   std::cout << p << std::endl;
-
 }
 
 void serial::println(String s)
 {
- increment_counter(28);
+  int len = s.getLength();
+  increment_counter(28 + (14*len));
   const char *p;
   p = s.getPointer();
   std::cout << p << std::endl;

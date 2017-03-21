@@ -31,3 +31,7 @@
 
 # Executable
 esplora_sim
+
+# Event files
+___client_events
+___device_updates

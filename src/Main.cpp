@@ -18,10 +18,11 @@
 #include <string>
 #include <array>
 #include <algorithm>
-#include "global_variables.h"
 #include "Arduino.h"
 #include "Hardware.h"
+#include "Serial.h"
 
+#include "global_variables.h"
 #include "sketch.ino"
 
 using std::string;
@@ -54,6 +55,10 @@ std::atomic<bool> running(true);
 
 // File descriptor to write ___device_updates.
 int updates_fd = -1;
+
+// allow serial
+serial Serial;
+serial Serial1;
 
 // current loop number
 uint32_t current_loop = 0;
