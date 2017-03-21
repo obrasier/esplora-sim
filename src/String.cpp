@@ -32,18 +32,16 @@ String::~String()
 }
 
 // overloaded = operator; avoids self assignment
-const String &String::operator=( const String &right )
+const String &String::operator=(const String &right) 
 {
-  //std::cout << "operator= called" << std::endl;
-
-  if ( &right != this ) // avoid self assignment
-  {
+  if ( &right != this ) {
     delete [] sPtr; // prevents memory leak
     lngth = right.lngth; // new String length
     setString( right.sPtr ); // call utility function
-  } // end if
-  else
+  }
+  else {
     std::cout << "Attempted assignment of a String to itself" << std::endl;
+  }
 
   return *this;
 }
@@ -88,7 +86,7 @@ char &String::operator[]( int subscript )
   if ( subscript < 0 || subscript >= lngth )
   {
     std::cerr << "Error: Subscript " << subscript
-         << " out of range" << std::endl;
+              << " out of range" << std::endl;
     exit( 1 ); // terminate program
   } // end if
 
@@ -102,7 +100,7 @@ char String::operator[]( int subscript ) const
   if ( subscript < 0 || subscript >= lngth )
   {
     std::cerr << "Error: Subscript " << subscript
-         << " out of range" << std::endl;
+              << " out of range" << std::endl;
     exit( 1 ); // terminate program
   } // end if
 

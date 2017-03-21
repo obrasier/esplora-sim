@@ -8,12 +8,19 @@
 #include "String.h"
 
 
-void serial::begin(int baud_rate)
+void serial::begin(unsigned long baud_rate)
 {
   // digitalMode[0] = RX;
   // digitalMode[1] = TX;
-  _baud_rate = baud_rate;
+  for (int i = 0; i < 12; i++) {
+    if (baud_rate == _possible_bauds[i]) {
+      _baud_rate = baud_rate;
+      return;
+    }
+  }
+  _baud_rate = 9600;
 }
+
 
 void serial::end()
 {
@@ -42,7 +49,6 @@ int serial::peek()
 
 void serial::flush()
 {
-//  increment_counter(100);
 }
 
 void serial::print(int x)
@@ -52,21 +58,12 @@ void serial::print(int x)
 
 }
 
-void print_binary(size_t const size, void const * const ptr)
+void print_binary(int number)
 {
-  unsigned char *b = (unsigned char*) ptr;
-  unsigned char byte;
-  int i, j;
-
-  for (i = size - 1; i >= 0; i--)
-  {
-    for (j = 7; j >= 0; j--)
-    {
-      byte = (b[i] >> j) & 1;
-      printf("%u", byte);
-    }
+  if (number) {
+    print_binary(number >> 1);
+    putc((number & 1) ? '1' : '0', stdout);
   }
-  puts("");
 }
 
 void serial::print(int x, int base)
@@ -75,7 +72,7 @@ void serial::print(int x, int base)
   char buf[20];
   switch (base) {
   case BIN:
-    print_binary(sizeof(x), &x);
+    print_binary(x);
     break;
   case OCT:
     sprintf(buf, "%o", x);
@@ -116,6 +113,13 @@ void serial::println(int x)
 
 }
 
+void serial::println(int x, int base)
+{
+  print(x, base);
+  std::cout << std::endl;
+
+}
+
 void serial::println(const char *p)
 {
   increment_counter(28);
@@ -134,7 +138,7 @@ void serial::println(std::string s)
 void serial::println(String s)
 {
   int len = s.getLength();
-  increment_counter(28 + (14*len));
+  increment_counter(28 + (14 * len));
   const char *p;
   p = s.getPointer();
   std::cout << p << std::endl;

@@ -2,12 +2,13 @@ CC=clang
 CXX=clang++
 INC=-I../inc/json -I../inc -I./json -I../sketch
 TARGET=esplora_sim
-CPPFLAGS= -fsanitize=address -std=c++11
+CPPFLAGS= -fsanitize=address -std=c++11  -W -Wall -pedantic
 LIBS= -lpthread
-SRC=Main.cpp Arduino.cpp Hardware.cpp String.cpp Serial.cpp
+SRC=Main.cpp Arduino.cpp Hardware.cpp String.cpp Serial.cpp 
 OBJS= $(SRC:.cpp=.o)
 JSRC = json/buffer.c json/lexer.c json/logging.c json/json.c
 JOBJS= $(JSRC:.c=.o)
+SKETCH = sketch.ino
 
 
 
@@ -25,4 +26,6 @@ $(TARGET): $(JOBJS) $(OBJS)
 
 clean:
 	rm *.o $(TARGET) 
+	touch ___client_events ___device_updates
+	rm ___device_updates ___client_events
 

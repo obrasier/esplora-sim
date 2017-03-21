@@ -58,7 +58,6 @@ int updates_fd = -1;
 
 // allow serial
 serial Serial;
-serial Serial1;
 
 // current loop number
 uint32_t current_loop = 0;
