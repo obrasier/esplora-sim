@@ -1,7 +1,7 @@
 #ifndef SERIAL_H_
 #define SERIAL_H_
 
-#include "String.h"
+#include "WString.h"
 #include "Arduino.h"
 
 
@@ -18,12 +18,13 @@ public:
   void print(int x);
   void print(int x, int base);
   void print(const char *p);
+  void print(const String &s);
   void print(unsigned char c);
   void println(int x);
   void println(int x, int base);
   void println(const char *p);
   void println(std::string p);
-  void println(String p);
+  void println(const String &s);
   void println();
   void println(unsigned char c);
   void write(char *p);

@@ -4,7 +4,7 @@ INC=-I../inc/json -I../inc -I./json -I../sketch
 TARGET=esplora_sim
 CPPFLAGS= -fsanitize=address -std=c++11  -W -Wall -pedantic
 LIBS= -lpthread
-SRC=Main.cpp Arduino.cpp Hardware.cpp String.cpp Serial.cpp 
+SRC=Main.cpp Arduino.cpp Hardware.cpp WString.cpp Serial.cpp ultoa.cpp
 OBJS= $(SRC:.cpp=.o)
 JSRC = json/buffer.c json/lexer.c json/logging.c json/json.c
 JOBJS= $(JSRC:.c=.o)

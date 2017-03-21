@@ -5,8 +5,8 @@
 #include "Arduino.h"
 #include "Hardware.h"
 #include "Serial.h"
-#include "String.h"
-
+#include "WString.h"
+#include "Print.h"
 
 void serial::begin(unsigned long baud_rate)
 {
@@ -89,6 +89,15 @@ void serial::print(int x, int base)
   }
 }
 
+void serial::print(const String &s)
+{
+  int len = s.length();
+  for (unsigned i = 0; i < s.length(); i++) {
+    putchar(s[i]);
+  }
+  increment_counter(28 + (14 * len));
+}
+
 
 void serial::print(const char *p)
 {
@@ -135,18 +144,16 @@ void serial::println(std::string s)
   std::cout << p << std::endl;
 }
 
-void serial::println(String s)
+void serial::println(const String &s)
 {
-  int len = s.getLength();
+  int len = s.length();
+  print(s);
+  println();
   increment_counter(28 + (14 * len));
-  const char *p;
-  p = s.getPointer();
-  std::cout << p << std::endl;
-
 }
 void serial::println()
 {
-  increment_counter(47); // measured on Esplora
+  increment_counter(28); // measured on Esplora
   std::cout << std::endl;
 }
 

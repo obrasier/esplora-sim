@@ -12,5 +12,9 @@ void loop() {
   //   Esplora.writeRGB(0, 0, 0);
   int x = digitalRead(10);
   Serial.println(24, HEX);
+  Serial.println("This is a string!");
+  String s = "HELLO THERE STRINGY!";
+  Serial.print(s);
+  Serial.println();
   delay(1000);
 }
