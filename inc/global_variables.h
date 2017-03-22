@@ -1,8 +1,16 @@
 #include "Serial.h"
 #include "Hardware.h"
+#include "Esplora.h"
+
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
+#include <string>
+
+
 // pin states of the arduino
 extern std::mutex m_pins;
-extern int x_pinValue[MAX_TOTAL_PINS];
+extern int x_pinValue[NUM_PINS];
 
 // led states for microbit simulator
 extern std::mutex m_leds;
@@ -31,3 +39,5 @@ extern std::condition_variable cv_suspend;
 
 extern serial Serial;
 extern serial Serial1;
+
+extern esplora Esplora;

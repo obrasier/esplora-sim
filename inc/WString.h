@@ -25,6 +25,7 @@
 #include <ctype.h>
 #include <avr/pgmspace.h>
 #include "ultoa.h"
+#include <stdint.h>
 
 // When compiling programs with this class, the following gcc parameters
 // dramatically increase performance and memory (RAM) efficiency, typically

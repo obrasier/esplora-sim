@@ -29,7 +29,7 @@
 #include "binary.h"
 
 #ifdef __cplusplus
-extern "C"{
+extern "C" {
 #endif
 
 #define HIGH 0x1
@@ -38,8 +38,6 @@ extern "C"{
 #define INPUT 0x0
 #define OUTPUT 0x1
 
-#define true 0x1
-#define false 0x0
 
 #define PI 3.1415926535897932384626433832795
 #define HALF_PI 1.5707963267948966192313216916398
@@ -76,15 +74,15 @@ extern "C"{
 
 #ifdef __cplusplus
 }
-template <class T,class S>
-T min(T a,S b)
+template <class T, class S>
+T min(T a, S b)
 {
-  return ((a)<(b)?(a):(b));
+  return ((a) < (b) ? (a) : (b));
 }
-template <class T,class S>
-T max(T a,S b)
+template <class T, class S>
+T max(T a, S b)
 {
-  return ((a)>(b)?(a):(b));
+  return ((a) > (b) ? (a) : (b));
 }
 extern "C"
 {
@@ -116,52 +114,49 @@ extern "C"
 #define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
 
 
-typedef unsigned int word;
+  typedef unsigned int word;
 
 #define bit(b) (1UL << (b))
 
-typedef uint8_t boolean;
-typedef uint8_t byte;
+  // typedef uint8_t boolean;
+  // typedef uint8_t byte;
 
-void init(void);
-void done(void);
+  void init(void);
+  void done(void);
 
-void pinMode(uint8_t, uint8_t);
-void pinSymbol(uint8_t, const char*);
-void digitalWrite(uint8_t, uint8_t);
-int digitalRead(uint8_t);
-int analogRead(uint8_t);
-void analogReference(uint8_t mode);
-void analogWrite(uint8_t, int);
+  // void pinMode(uint8_t, uint8_t);
+  // void pinSymbol(uint8_t, const char*);
+  // void digitalWrite(uint8_t, uint8_t);
+  // int digitalRead(uint8_t);
+  // int analogRead(uint8_t);
+  // void analogReference(uint8_t mode);
+  // void analogWrite(uint8_t, int);
 
-unsigned long millis(void);
-unsigned long micros(void);
-void delay(unsigned long);
-void delayMicroseconds(unsigned int us);
-unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout);
 
-void shiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, uint8_t val);
-uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder);
+  // unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout);
 
-void attachInterrupt(uint8_t, void (*)(void), int mode);
-void detachInterrupt(uint8_t);
+  // void shiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, uint8_t val);
+  // uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder);
 
-void setup(void);
-void loop(void);
+  // void attachInterrupt(uint8_t, void (*)(void), int mode);
+  // void detachInterrupt(uint8_t);
 
-int* empty(void);
+  void setup(void);
+  void loop(void);
 
-extern void fdevopen(int (*)(char, FILE*),int);
+  int* empty(void);
+
+  extern void fdevopen(int (*)(char, FILE*), int);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#define SPDR (*empty()) 
-#define SPCR (*empty())  
-#define SPSR (*empty())  
-#define SPIE (*empty())  
-#define SPIF (*empty())  
+#define SPDR (*empty())
+#define SPCR (*empty())
+#define SPSR (*empty())
+#define SPIE (*empty())
+#define SPIF (*empty())
 #define _BV(x) (1<<(x))
 
 

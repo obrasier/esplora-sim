@@ -6,7 +6,7 @@
 #include "Hardware.h"
 #include "Serial.h"
 #include "WString.h"
-#include "Print.h"
+#include "ultoa.h"
 
 void serial::begin(unsigned long baud_rate)
 {
@@ -58,44 +58,51 @@ void serial::print(int x)
 
 }
 
-void print_binary(int number)
+void serial::print(float x)
 {
-  if (number) {
-    print_binary(number >> 1);
-    putc((number & 1) ? '1' : '0', stdout);
+//  increment_counter(100);
+  std::cout << x;
+
+}
+
+void serial::print(std::string s)
+{
+  increment_counter(28);
+  const char *p;
+  p = s.c_str();
+  std::cout << p;
+  fflush(stdout);
+}
+
+void serial::print(unsigned int x, int base)
+{
+//  increment_counter(16);
+  char buf[2 + 8 * sizeof(unsigned int)];
+  if (base == BIN || base == OCT || base == DEC || base == HEX) {
+    utoa(x, buf, base);
+    std::cout << buf;
+    fflush(stdout);
   }
 }
 
 void serial::print(int x, int base)
 {
 //  increment_counter(16);
-  char buf[20];
-  switch (base) {
-  case BIN:
-    print_binary(x);
-    break;
-  case OCT:
-    sprintf(buf, "%o", x);
+  char buf[2 + 8 * sizeof(int)];
+  if (base == BIN || base == OCT || base == DEC || base == HEX) {
+    itoa(x, buf, base);
     std::cout << buf;
-    break;
-  case DEC:
-    sprintf(buf, "%d", x);
-    std::cout << buf;
-    break;
-  case HEX:
-    sprintf(buf, "%x", x);
-    std::cout << buf;
-    break;
+    fflush(stdout);
   }
 }
 
 void serial::print(const String &s)
 {
-  int len = s.length();
-  for (unsigned i = 0; i < s.length(); i++) {
+  for (size_t i = 0; i < s.length(); i++) {
     putchar(s[i]);
   }
-  increment_counter(28 + (14 * len));
+  fflush(stdout);
+  increment_counter(28 + (14 * s.length()));
 }
 
 
@@ -111,59 +118,65 @@ void serial::print(unsigned char uc)
 {
   increment_counter(28);
   std::cout << uc;
-
+  fflush(stdout);
 }
 
+void serial::println()
+{
+  increment_counter(28); // measured on Esplora
+  _ln_flush();
+}
 
 void serial::println(int x)
 {
-  increment_counter(28);
-  std::cout << x << std::endl;
-
+  print(x);
+  _ln_flush();
 }
 
 void serial::println(int x, int base)
 {
   print(x, base);
-  std::cout << std::endl;
+  _ln_flush();
+}
 
+
+void serial::println(unsigned int x, int base)
+{
+  print(x, base);
+  _ln_flush();
 }
 
 void serial::println(const char *p)
 {
-  increment_counter(28);
-  std::cout << p << std::endl;
-
+  print(p);
+  _ln_flush();
 }
 
 void serial::println(std::string s)
 {
-  increment_counter(28);
-  const char *p;
-  p = s.c_str();
-  std::cout << p << std::endl;
+  print(s);
+  _ln_flush();
 }
 
 void serial::println(const String &s)
 {
-  int len = s.length();
   print(s);
-  println();
-  increment_counter(28 + (14 * len));
-}
-void serial::println()
-{
-  increment_counter(28); // measured on Esplora
-  std::cout << std::endl;
+  _ln_flush();
 }
 
 void serial::println(unsigned char uc)
 {
-  increment_counter(65);
-  std::cout << uc << std::endl;
+  print(uc);
+  _ln_flush();
 }
 
 void serial::write(char *p)
 {
   print(p);
+}
+
+void serial::_ln_flush()
+{
+  std::cout << std::endl;
+  fflush(stdout);
 }

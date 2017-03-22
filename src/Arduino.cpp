@@ -5,7 +5,7 @@
 #include "Arduino.h"
 #include "global_variables.h"
 
-void pinMode(int pin, int mode)
+void pinMode(uint8_t pin, int mode)
 {
 //  increment_counter(20);
   if (mode == INPUT)
@@ -16,7 +16,7 @@ void pinMode(int pin, int mode)
     std::cout << "doing output pinmode" << std::endl;
 
 }
-void digitalWrite(int pin, int value)
+void digitalWrite(uint8_t pin, int value)
 {
 //  increment_counter(20);
   if (value == 0)
@@ -25,19 +25,19 @@ void digitalWrite(int pin, int value)
     std::cout << "doing digitalWrite high" << std::endl;
 
 }
-int digitalRead(int pin)
+int digitalRead(uint8_t pin)
 {
 //  increment_counter(20);
   return -9;
 }
 
-void analogWrite(int pin, int value) //PWM
+void analogWrite(uint8_t pin, int value) //PWM
 {
 //  increment_counter(20);
 
 }
 
-int analogRead(int pin)
+int analogRead(uint8_t pin)
 {
 //  increment_counter(20);
   std::cout << "doing analogRead" << std::endl;
@@ -45,16 +45,16 @@ int analogRead(int pin)
 }
 
 //------ Advanced I/O ----------------------
-void tone(int pin, unsigned int freq)
+void tone(uint8_t pin, unsigned int freq)
 {
   std::cout << "called tone" << std::endl;
 }
 
-void tone(int pin, unsigned int freq, unsigned long duration)
+void tone(uint8_t pin, unsigned int freq, unsigned long duration)
 {
 }
 
-void noTone(int pin)
+void noTone(uint8_t pin)
 {
   std::cout << "called noTone" << std::endl;
 }
@@ -70,12 +70,12 @@ int shiftIn(int dataPin, int clockPin, int bitOrder)
   return -9;
 }
 
-unsigned long pulseIn(int pin, int value)
+unsigned long pulseIn(uint8_t pin, int value)
 {
   return -9;
 }
 
-unsigned long pulseIn(int pin, int value, unsigned long timeout)
+unsigned long pulseIn(uint8_t pin, int value, unsigned long timeout)
 {
   return -9;
 }
@@ -153,6 +153,7 @@ long random(long lowerLimit, long upperLimit)
 
 
 //------ Bits and Bytes --------------------
+/*
 unsigned char lowByte(int x)
 {
 //  increment_counter(100);
@@ -212,7 +213,7 @@ int bit(int n)
   res = 1 << n;
   return (res);
 }
-
+*/
 
 //------ External Interrupts ---------------
 
@@ -220,7 +221,7 @@ int bit(int n)
 // void attachInterrupt(int ir, void(*func)(), int mode)
 // {
 // //  increment_counter(100);
-//   int pin, ok = S_NOK;
+//   uint8_t pin, ok = S_NOK;
 
 //   // ok = checkRange(S_OK, "interrupt", ir);
 
@@ -273,15 +274,5 @@ int bit(int n)
 //   }
 // }
 //------ Interrupts ------------------------
-void interrupts()
-{
-}
-void noInterrupts()
-{
-}
-
-
-
-
 
 

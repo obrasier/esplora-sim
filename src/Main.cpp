@@ -23,7 +23,16 @@
 #include "Serial.h"
 
 #include "global_variables.h"
+
+
+// SUPER DODGY!!!
+// Need to come up with a better way to do overflow etc.
+// At the moment none exists
+// #define arduino_int int
+// #define int int16_t
 #include "sketch.ino"
+// #define int arduino_int
+
 
 using std::string;
 using std::ostream;
@@ -58,6 +67,9 @@ int updates_fd = -1;
 
 // allow serial
 serial Serial;
+
+// Esplora
+esplora Esplora;
 
 // current loop number
 uint32_t current_loop = 0;
@@ -110,7 +122,7 @@ list_to_json(const char* field, char** json_ptr, char* json_end, int* values, si
   } else {
     appendf(json_ptr, json_end, "\"%s\": [", field);
 
-    for (int i = 0; i < len; ++i) {
+    for (size_t i = 0; i < len; ++i) {
       appendf(json_ptr, json_end, "%d,", values[i]);
     }
 
@@ -122,10 +134,10 @@ list_to_json(const char* field, char** json_ptr, char* json_end, int* values, si
 
 void send_pin_update() {
   if (send_updates) {
-    static int prev_pins[MAX_TOTAL_PINS] = {0};
-    static int pins[MAX_TOTAL_PINS] = {0};
-    int pwm_dutycycle[MAX_TOTAL_PINS] = {0};
-    int pwm_period[MAX_TOTAL_PINS] = {0};
+    static int prev_pins[NUM_PINS] = {0};
+    static int pins[NUM_PINS] = {0};
+    int pwm_dutycycle[NUM_PINS] = {0};
+    int pwm_period[NUM_PINS] = {0};
     m_pins.lock();
     memcpy(pins, x_pinValue, sizeof(x_pinValue));
     m_pins.unlock();
@@ -210,7 +222,7 @@ process_client_button(const json_value* data) {
   int val = (state->as.number == 0) ? 1 : 0;
 
   m_pins.lock();
-  x_pinValue[switch_num+1] = val; // offset of 1 for microbit_sim
+  x_pinValue[switch_num + 1] = val; // offset of 1 for microbit_sim
   m_pins.unlock();
   write_event_ack("microbit_button", nullptr);
 }
@@ -462,13 +474,14 @@ process_client_event(int fd) {
 // a slider event on startup based on it's position.
 void
 set_esplora_state() {
+  int switches[4] = {SIM_SWITCH_1, SIM_SWITCH_2, SIM_SWITCH_3, SIM_SWITCH_4};
   int i;
   m_pins.lock();
-  for (i = 0; i < MAX_TOTAL_PINS; i++)
+  for (i = 0; i < NUM_PINS; i++)
     x_pinValue[i] = 0;
   // set switches to be high (active low)
-  for (i = 1; i < 5; i++)
-    x_pinValue[i] = HIGH;
+  for (i = 0; i < 4; i++)
+    x_pinValue[switches[i]] = HIGH;
   x_pinValue[SIM_JOYSTICK_SW] = 1023;
   m_pins.unlock();
   send_pin_update();
@@ -492,9 +505,11 @@ setup_output_pipe() {
 
 
 // Run the Arduino code
-void 
+void
 run_code()
 {
+
+
   setup();
   increment_counter(1032); // takes 1032 us for setup to run
   while (running) {

@@ -2,9 +2,9 @@
 #define ARDUINO_H_
 
 #include "binary.h"
+#include "wiring.h"
+#include <stdint.h>
 
-#define INPUT 0
-#define OUTPUT 1
 #define INPUT_PULLUP 2
 
 #define HIGH 0x1
@@ -17,20 +17,21 @@
 #define HEX 16
 
 typedef uint8_t byte;
-// in Ardino.cpp
+typedef bool boolean;
 
-void pinMode(int pin, int mode);
-void digitalWrite(int pin, int value);
-int digitalRead(int pin);
-void analogWrite(int pin, int value); //PWM
-int analogRead(int pin);
-void tone(int pin, unsigned int freq);
-void tone(int pin, unsigned int freq, unsigned long duration);
-void noTone(int pin);
+
+void pinMode(uint8_t pin, int mode);
+void digitalWrite(uint8_t pin, int value);
+int digitalRead(uint8_t pin);
+void analogWrite(uint8_t pin, int value); //PWM
+int analogRead(uint8_t pin);
+void tone(uint8_t pin, unsigned int freq);
+void tone(uint8_t pin, unsigned int freq, unsigned long duration);
+void noTone(uint8_t pin);
 void shiftOut(int dataPin, int clockPin, int bitOrder, int value);
 int shiftIn(int dataPin, int clockPin, int bitOrder);
-unsigned long pulseIn(int pin, int value);
-unsigned long pulseIn(int pin, int value, unsigned long timeout);
+unsigned long pulseIn(uint8_t pin, int value);
+unsigned long pulseIn(uint8_t pin, int value, unsigned long timeout);
 unsigned long millis();
 unsigned long micros();
 void delay(uint32_t ms);
@@ -39,15 +40,15 @@ int map(int x, int fromLow, int fromHigh, int toLow, int toHigh);
 void randomSeed(int seed);
 long random(long upperLimit);
 long random(long lowerLimit, long upperLimit);
-unsigned char lowByte(int x);
-unsigned char highByte(int x);
-int bitRead(int x, int n);
-void  bitSet(unsigned int *x, int n);
-void bitClear(unsigned int *x, int n);
-void bitWrite(unsigned int *x, int n, int b);
-int bit(int n);
-void interrupts();
-void noInterrupts();
+// unsigned char lowByte(int x);
+// unsigned char highByte(int x);
+// int bitRead(int x, int n);
+// void  bitSet(unsigned int *x, int n);
+// void bitClear(unsigned int *x, int n);
+// void bitWrite(unsigned int *x, int n, int b);
+// int bit(int n);
+// void interrupts();
+// void noInterrupts();
 
 // in Hardware.cpp
 void increment_counter(int us);
