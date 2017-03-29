@@ -1,6 +1,6 @@
 CC=clang
 CXX=clang++
-INC=-I../inc/json -I../inc -I./json -I./sketch
+INC=-I./inc/json -I./inc -I./json -I./sketch
 TARGET=esplora_sim
 CPPFLAGS= -fsanitize=address -std=c++11  -W -Wall -pedantic
 LIBS= -lpthread
