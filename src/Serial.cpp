@@ -8,7 +8,7 @@
 #include "WString.h"
 #include "ultoa.h"
 
-void serial::begin(unsigned long baud_rate)
+void _Serial::begin(unsigned long baud_rate)
 {
   // digitalMode[0] = RX;
   // digitalMode[1] = TX;
@@ -22,50 +22,50 @@ void serial::begin(unsigned long baud_rate)
 }
 
 
-void serial::end()
+void _Serial::end()
 {
   // digitalMode[0] = FREE;
   // digitalMode[1] = FREE;
 
 }
 
-int serial::available()  // returns the number of bytes available to read
+int _Serial::available()  // returns the number of bytes available to read
 {
 //  increment_counter(12);
   return (1);
 }
 
-char serial::read() // the first byte of incoming serial data available (or -1 if no data is available)
+char _Serial::read() // the first byte of incoming serial data available (or -1 if no data is available)
 {
 //  increment_counter(100);
   return (-1);
 }
 
-int serial::peek()
+int _Serial::peek()
 {
 //  increment_counter(100);
   return (-1);
 }
 
-void serial::flush()
+void _Serial::flush()
 {
 }
 
-void serial::print(int x)
+void _Serial::print(int x)
 {
 //  increment_counter(100);
   std::cout << x;
 
 }
 
-void serial::print(float x)
+void _Serial::print(float x)
 {
 //  increment_counter(100);
   std::cout << x;
 
 }
 
-void serial::print(std::string s)
+void _Serial::print(std::string s)
 {
   increment_counter(28);
   const char *p;
@@ -74,7 +74,7 @@ void serial::print(std::string s)
   fflush(stdout);
 }
 
-void serial::print(unsigned int x, int base)
+void _Serial::print(unsigned int x, int base)
 {
 //  increment_counter(16);
   char buf[2 + 8 * sizeof(unsigned int)];
@@ -85,7 +85,7 @@ void serial::print(unsigned int x, int base)
   }
 }
 
-void serial::print(int x, int base)
+void _Serial::print(int x, int base)
 {
 //  increment_counter(16);
   char buf[2 + 8 * sizeof(int)];
@@ -96,7 +96,7 @@ void serial::print(int x, int base)
   }
 }
 
-void serial::print(const String &s)
+void _Serial::print(const String &s)
 {
   for (size_t i = 0; i < s.length(); i++) {
     putchar(s[i]);
@@ -106,7 +106,7 @@ void serial::print(const String &s)
 }
 
 
-void serial::print(const char *p)
+void _Serial::print(const char *p)
 {
   std::cout << p;
   int len = strlen(p);
@@ -114,68 +114,68 @@ void serial::print(const char *p)
   increment_counter(28 + (14 * len));
 }
 
-void serial::print(unsigned char uc)
+void _Serial::print(unsigned char uc)
 {
   increment_counter(28);
   std::cout << uc;
   fflush(stdout);
 }
 
-void serial::println()
+void _Serial::println()
 {
   increment_counter(28); // measured on Esplora
   _ln_flush();
 }
 
-void serial::println(int x)
+void _Serial::println(int x)
 {
   print(x);
   _ln_flush();
 }
 
-void serial::println(int x, int base)
+void _Serial::println(int x, int base)
 {
   print(x, base);
   _ln_flush();
 }
 
 
-void serial::println(unsigned int x, int base)
+void _Serial::println(unsigned int x, int base)
 {
   print(x, base);
   _ln_flush();
 }
 
-void serial::println(const char *p)
+void _Serial::println(const char *p)
 {
   print(p);
   _ln_flush();
 }
 
-void serial::println(std::string s)
+void _Serial::println(std::string s)
 {
   print(s);
   _ln_flush();
 }
 
-void serial::println(const String &s)
+void _Serial::println(const String &s)
 {
   print(s);
   _ln_flush();
 }
 
-void serial::println(unsigned char uc)
+void _Serial::println(unsigned char uc)
 {
   print(uc);
   _ln_flush();
 }
 
-void serial::write(char *p)
+void _Serial::write(char *p)
 {
   print(p);
 }
 
-void serial::_ln_flush()
+void _Serial::_ln_flush()
 {
   std::cout << std::endl;
   fflush(stdout);

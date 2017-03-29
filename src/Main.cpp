@@ -25,9 +25,8 @@
 #include "global_variables.h"
 
 
-// SUPER DODGY!!!
 // Need to come up with a better way to do overflow etc.
-// At the moment none exists
+// At the moment none exists, but I don't know a better way.... :/
 #define arduino_int int
 #define int int16_t
 #include "sketch.ino"
@@ -64,13 +63,12 @@ std::atomic<bool> _running(true);
 int updates_fd = -1;
 
 // allow serial
-serial Serial;
+_Serial Serial;
 
 // Esplora
-esplora Esplora;
+_Esplora Esplora;
 
-std::mutex _m_device;
-Device _device;
+_Device _device;
 
 // current loop number
 uint32_t _current_loop = 0;
@@ -79,18 +77,10 @@ uint32_t _current_loop = 0;
 std::mutex _m_elapsed;
 uint64_t _micros_elapsed = 0;
 
-// to get appendf to work
-// inline int
-// min(int a, int b)
-// {
-//   return (a < b ? a : b);
-// }
-
 // Elapsed time of the arduino in microseconds
 uint64_t
 get_elapsed_micros() {
-  uint64_t e = _device.get_micros();
-  return e;
+  return _device.get_micros();
 }
 
 // Write to the output pipe
@@ -135,12 +125,16 @@ void send_pin_update() {
   if (_send_updates) {
     static int prev_pins[NUM_PINS] = {0};
     static int pins[NUM_PINS] = {0};
+    static int prev_mux[MUX_PINS] = {0};
+    static int mux[MUX_PINS] = {0};
     int pwm_dutycycle[NUM_PINS] = {0};
     int pwm_period[NUM_PINS] = {0};
     std::array<int, NUM_PINS> curr_pins = _device.get_all_pins();
+    std::array<int, MUX_PINS> curr_mux = _device.get_all_mux();
     memcpy(pins, curr_pins.data(), sizeof(pins));
+    memcpy(mux, curr_mux.data(), sizeof(mux));
 
-    if (memcmp(pins, prev_pins, sizeof(prev_pins)) != 0) {
+    if (memcmp(pins, prev_pins, sizeof(prev_pins)) != 0 || memcmp(mux, prev_mux, sizeof(prev_mux)) != 0) {
       // pin states have changed
       char json[1024];
       char* json_ptr = json;
@@ -149,19 +143,21 @@ void send_pin_update() {
               get_elapsed_micros());
 
       list_to_json("p", &json_ptr, json_end, pins, sizeof(pins) / sizeof(int));
-
       appendf(&json_ptr, json_end, ", ");
-      list_to_json("pwmd", &json_ptr, json_end, pwm_dutycycle,
-                   sizeof(pwm_dutycycle) / sizeof(int));
 
+      list_to_json("mux", &json_ptr, json_end, mux, sizeof(mux) / sizeof(int));
       appendf(&json_ptr, json_end, ", ");
+
+      list_to_json("pwmd", &json_ptr, json_end, pwm_dutycycle, sizeof(pwm_dutycycle) / sizeof(int));
+      appendf(&json_ptr, json_end, ", ");
+
       list_to_json("pwmp", &json_ptr, json_end, pwm_period, sizeof(pwm_period) / sizeof(int));
-
       appendf(&json_ptr, json_end, "}}]\n");
 
       write_to_updates(json, json_ptr - json, true);
 
       memcpy(prev_pins, pins, sizeof(pins));
+      memcpy(prev_mux, mux, sizeof(mux));
     }
   }
 }
@@ -218,7 +214,7 @@ process_client_button(const json_value* data) {
   int switch_num = id->as.number;
   int val = (state->as.number == 0) ? 1 : 0;
 
-  _device.set_pin_value(switch_num + 1, val); // offset of 1 for microbit_sim
+  _device.set_mux_value(switch_num, val); 
   write_event_ack("microbit_button", nullptr);
 }
 
@@ -230,7 +226,7 @@ process_client_temperature(const json_value* data) {
     fprintf(stderr, "Temperature event missing t\n");
     return;
   }
-  _device.set_pin_value(SIM_TEMPERATURE, t->as.number);
+  _device.set_mux_value(CH_TEMPERATURE, t->as.number);
   char ack_json[1024];
   snprintf(ack_json, sizeof(ack_json), "{\"t\": %d", static_cast<int32_t>(t->as.number));
   write_event_ack("temperature", ack_json);
@@ -244,7 +240,7 @@ process_client_light(const json_value* data) {
     fprintf(stderr, "Light event missing l\n");
     return;
   }
-  _device.set_pin_value(SIM_LIGHT, l->as.number);
+  _device.set_mux_value(CH_LIGHT, l->as.number);
   char ack_json[1024];
   snprintf(ack_json, sizeof(ack_json), "{\"l\": %d", static_cast<int32_t>(l->as.number));
   write_event_ack("light", ack_json);
@@ -258,7 +254,7 @@ process_client_slider(const json_value* data) {
     fprintf(stderr, "Slider event missing s\n");
     return;
   }
-  _device.set_pin_value(SIM_SLIDER, s->as.number);
+  _device.set_mux_value(CH_SLIDER, s->as.number);
   char ack_json[1024];
   snprintf(ack_json, sizeof(ack_json), "{\"s\": %d", static_cast<int32_t>(s->as.number));
   write_event_ack("slider", ack_json);
@@ -273,7 +269,7 @@ process_client_microphone(const json_value* data) {
     fprintf(stderr, "Microphone event missing mic\n");
     return;
   }
-  _device.set_pin_value(SIM_MIC, mic->as.number);
+  _device.set_mux_value(CH_MIC, mic->as.number);
   char ack_json[1024];
   snprintf(ack_json, sizeof(ack_json), "{\"mic\": %d", static_cast<int32_t>(mic->as.number));
   write_event_ack("mic", ack_json);
@@ -295,6 +291,7 @@ process_client_accel(const json_value* data) {
   write_event_ack("accel", nullptr);
 }
 
+// Process joystick switch event
 void
 process_client_joystick_sw(const json_value* data) {
   const json_value* j_sw = json_value_get(data, "j_sw");
@@ -302,12 +299,14 @@ process_client_joystick_sw(const json_value* data) {
     fprintf(stderr, "Joystick switch event missing j_sw\n");
     return;
   }
-  _device.set_pin_value(SIM_JOYSTICK_SW, (j_sw->as.number == 0) ? 1023 : 0);
+  _device.set_mux_value(CH_JOYSTICK_SW, (j_sw->as.number == 0) ? 1023 : 0);
   char ack_json[1024];
   snprintf(ack_json, sizeof(ack_json), "{\"j_sw\": %d", static_cast<int32_t>(j_sw->as.number));
   write_event_ack("joystick_switch", ack_json);
 }
 
+// Process a joystick event. Note the joystick is 11 and 12 on 
+// the multiplexer, so we apply an offset of 11 to the value.
 void
 process_client_joystick(const json_value* data) {
   const json_value* id = json_value_get(data, "id");
@@ -317,9 +316,9 @@ process_client_joystick(const json_value* data) {
     fprintf(stderr, "Joystick event missing id and/or state\n");
     return;
   }
-  int pin_num = id->as.number;
+  int pin_num = id->as.number + CH_JOYSTICK_X;
   int val = state->as.number;
-  _device.set_pin_value(pin_num, val);
+  _device.set_mux_value(pin_num, val);
   write_event_ack("joystick", nullptr);
 }
 
@@ -439,10 +438,8 @@ process_client_event(int fd) {
     if (!*line_end) {
       break;
     }
-
     line_start = line_end + 1;
   }
-
   write_event_ack("microbit_event", nullptr);
 }
 
@@ -453,16 +450,16 @@ process_client_event(int fd) {
 // a slider event on startup based on it's position.
 void
 set_esplora_state() {
-  int switches[4] = {SIM_SWITCH_1, SIM_SWITCH_2, SIM_SWITCH_3, SIM_SWITCH_4};
+  int switches[4] = {CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4};
   _device.zero_all_pins();
   // set switches to be high (active low)
-  for (int i = 1; i < 5; i++)
-    _device.set_pin_value(switches[i], HIGH);
-  _device.set_pin_value(SIM_JOYSTICK_SW, 1023);
+  for (int i = 0; i < 4; i++)
+    _device.set_mux_value(switches[i], HIGH);
+  _device.set_mux_value(CH_JOYSTICK_SW, 1023);
   send_pin_update();
 }
 
-
+// Setup the output pipe
 void
 setup_output_pipe() {
   // Open the events pipe.
@@ -487,12 +484,15 @@ run_code()
   }
 }
 
+// Handle SIGINT in the code thread to shutdown after a loop
+// has finished and final device update has been sent
 void
 sig_handler(int s) {
   _shutdown = true;
   _running = false;
 }
 
+// Setup the signal handler then run the code
 void
 code_thread_main() {
   // handle SIGINTs

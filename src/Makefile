@@ -9,8 +9,6 @@ OBJS= $(SRC:.cpp=.o)
 JSRC = json/buffer.c json/lexer.c json/logging.c json/json.c
 JOBJS= $(JSRC:.c=.o)
 SKETCH = sketch.ino
-MAINDEPS = Device.o 
-
 
 
 all: $(TARGET)
@@ -18,14 +16,11 @@ all: $(TARGET)
 $(TARGET): $(JOBJS) $(OBJS) 
 	$(CXX) $(CPPFLAGS) $(INC) -o $(TARGET) $(JOBJS) $(OBJS) $(LIBS)
 
-Main.o: Device.o 
-
 .c.o:
 	$(CC) $(INC) -c $< -o $@
 
 .cpp.o:
 	$(CXX) $(CPPFLAGS) $(INC) -c $< -o $@
-
 
 
 clean:

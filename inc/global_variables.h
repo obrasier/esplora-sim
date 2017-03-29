@@ -11,13 +11,6 @@
 #include <string>
 
 
-// pin states of the arduino
-extern int x_pinValue[NUM_PINS];
-
-// led states for microbit simulator
-extern std::mutex m_leds;
-extern int x_leds[25]; 
-
 // shutdown the simulator
 extern std::atomic<bool> _shutdown;
 
@@ -35,13 +28,12 @@ extern std::atomic<bool> _suspend;
 extern std::mutex _m_suspend;
 extern std::condition_variable _cv_suspend;
 
-extern serial Serial;
-extern serial Serial1;
+extern _Serial Serial;
+// extern _Serial Serial1;
 
-extern esplora Esplora;
+extern _Esplora Esplora;
 
 // 
-extern std::mutex _m_device;
-extern Device _device;
+extern _Device _device;
 
 #endif

@@ -6,7 +6,7 @@
 #include <string>
 
 
-class serial {
+class _Serial {
 
 public:
   void begin(unsigned long baud_rate);
@@ -14,7 +14,7 @@ public:
   int  available();
   char read();
   int  peek();
-  int availableForWrite();
+  int  availableForWrite();
   void flush();
   void print(int x);
   void print(float x);

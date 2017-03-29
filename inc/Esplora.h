@@ -8,6 +8,21 @@
  * method.
  */
 
+const byte CH_SWITCH_1    = 0;
+const byte CH_SWITCH_2    = 1;
+const byte CH_SWITCH_3    = 2;
+const byte CH_SWITCH_4    = 3;
+const byte CH_SLIDER      = 4;
+const byte CH_LIGHT       = 5;
+const byte CH_TEMPERATURE = 6;
+const byte CH_MIC         = 7;
+const byte CH_TINKERKIT_A = 8;
+const byte CH_TINKERKIT_B = 9;
+const byte CH_JOYSTICK_SW = 10;
+const byte CH_JOYSTICK_X  = 11;
+const byte CH_JOYSTICK_Y  = 12;
+
+
 const byte SWITCH_1       = 1;
 const byte SWITCH_2       = 2;
 const byte SWITCH_3       = 3;
@@ -38,12 +53,16 @@ const byte Z_AXIS = 2;
 
 typedef uint8_t byte;
 
-class esplora {
+
+extern void tone(unsigned int pin, unsigned int freq);
+extern void tone(unsigned int pin, unsigned int freq, unsigned long duration);
+extern void noTone(unsigned int pin);
+
+class _Esplora {
 private:
   byte lastRed;
   byte lastGreen;
   byte lastBlue;
-  uint32_t _duration_left;
 
 public:
   int readSlider();
@@ -66,6 +85,9 @@ public:
   void noTone();
   void tone(unsigned int freq);
   void tone(unsigned int freq, unsigned long duration);
+  unsigned int readTinkerkitInput(byte whichInput);
+  unsigned int readTinkerkitInputA();
+  unsigned int readTinkerkitInputB();
 };
 
 #endif

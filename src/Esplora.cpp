@@ -21,6 +21,8 @@
 #include "Device.h"
 #include "global_variables.h"
 
+
+
 /*
  * The following constants tell, for each accelerometer
  * axis, which values are returned when the axis measures
@@ -57,51 +59,43 @@ const byte LED_PIN     = 13;
 //==========================================
 // Esplora
 //==========================================
-int esplora::readSlider() {
+int _Esplora::readSlider() {
   increment_counter(128); // 128.2
-  int val = _device.get_pin_value(SIM_SLIDER);
-  return val;
+  return _device.get_mux_value(CH_SLIDER);
 }
 
-int esplora::readLightSensor() {
+int _Esplora::readLightSensor() {
   increment_counter(128); // 128.2
-  int val = _device.get_pin_value(SIM_LIGHT);
-  return val;
+  return _device.get_mux_value(CH_LIGHT);
 }
 
-int esplora::readTemperature(byte scale) {
+int _Esplora::readTemperature(byte scale) {
   increment_counter(128); // 128.2
-  int raw = _device.get_pin_value(SIM_TEMPERATURE);
-  switch (scale) {
-    case DEGREES_C: 
-      return (int)((raw*500/1024)-50);
-    case DEGREES_F: 
-      return (int)((raw*450/512)-58);
-    default:
-      return (int)((raw*500/1024)-50);
+  float temp = _device.get_mux_value(CH_TEMPERATURE);
+  if (scale == DEGREES_F){
+    return (int)(temp*9)/5 + 32;
+  }
+  else {
+    return int(temp);
   }
 }
 
-int esplora::readMicrophone() {
+int _Esplora::readMicrophone() {
   increment_counter(128); // 128.2 us
-  int val = _device.get_pin_value(SIM_MIC);
-  return val;
-
+  return _device.get_mux_value(CH_MIC);
 }
 
-int esplora::readJoystickSwitch() {
+int _Esplora::readJoystickSwitch() {
   increment_counter(30); // takes 30.2 us
-  int val = _device.get_pin_value(SIM_JOYSTICK_SW);
-  return val;
+  return _device.get_mux_value(CH_JOYSTICK_SW);
 }
 
-int esplora::readJoystickButton() {
+int _Esplora::readJoystickButton() {
   increment_counter(32); // 31.9 us
-  int val = (_device.get_pin_value(SIM_JOYSTICK_SW) == 1023) ? HIGH : LOW;
-  return val;
+  return (_device.get_mux_value(CH_JOYSTICK_SW) == 1023) ? HIGH : LOW;
 }
 
-int esplora::readAccelerometer(byte axis) {
+int _Esplora::readAccelerometer(byte axis) {
   increment_counter(112); // 112.1
   int val;
   switch (axis) {
@@ -112,105 +106,108 @@ int esplora::readAccelerometer(byte axis) {
   return val;
 }
 
-int esplora::readButton(byte button) {
+int _Esplora::readButton(byte button) {
   increment_counter(136); // 136.01 us
-  int val = (_device.get_pin_value(button) > 0) ? HIGH : LOW;
-  return val;
+  return (_device.get_mux_value(button) > 0) ? HIGH : LOW;
 }
 
-int esplora::readJoystickX() {
+int _Esplora::readJoystickX() {
   increment_counter(128);
-  int val = _device.get_pin_value(SIM_JOYSTICK_X);
-  return val;
+  return _device.get_mux_value(CH_JOYSTICK_X);
 }
 
-int esplora::readJoystickY() {
+int _Esplora::readJoystickY() {
   increment_counter(128);
-  int val = _device.get_pin_value(SIM_JOYSTICK_Y);
-  return val;
+  return _device.get_mux_value(CH_JOYSTICK_Y);
 }
 
-void esplora::writeRGB(byte red, byte green, byte blue) {
+void _Esplora::writeRGB(byte red, byte green, byte blue) {
   writeRed(red);
   writeGreen(green);
   writeBlue(blue);
 }
 
-void esplora::writeRed(byte red) {
-  if (red == lastRed) {
+void _Esplora::writeRed(byte red) {
+  if (red == lastRed) 
     return;
-  }
   increment_counter(1);
-  _device.set_pin_value(SIM_RED, red);
+  analogWrite(SIM_RED, red);
   lastRed = red;
   send_pin_update();
   int bright = map(red, 0, 255, 0, 9);
-  _device.set_led(4, bright);
+  _device.set_led(0, bright);
   send_led_update();
 }
 
-void esplora::writeGreen(byte green) {
+void _Esplora::writeGreen(byte green) {
   if (green == lastGreen)
     return;
   increment_counter(1);
-  _device.set_pin_value(SIM_GREEN, green);
+  analogWrite(SIM_GREEN, green);
   lastGreen = green;
   send_pin_update();
   int bright = map(green, 0, 255, 0, 9);
-  _device.set_led(5, bright);
+  _device.set_led(1, bright);
   send_led_update();
 }
 
-void esplora::writeBlue(byte blue) {
+void _Esplora::writeBlue(byte blue) {
   if (blue == lastBlue)
     return;
   increment_counter(1);
-  _device.set_pin_value(SIM_BLUE, blue);
+  analogWrite(SIM_BLUE, blue);
   lastBlue = blue;
-  send_pin_update();
   int bright = map(blue, 0, 255, 0, 9);
-  _device.set_led(6, bright);
+  _device.set_led(2, bright);
   send_led_update();
 }
 
-byte esplora::readRed() {
+byte _Esplora::readRed() {
   return lastRed;
 }
 
-byte esplora::readGreen() {
+byte _Esplora::readGreen() {
   return lastGreen;
 }
 
-byte esplora::readBlue() {
+byte _Esplora::readBlue() {
   return lastBlue;
 }
 
-void esplora::noTone() {
+void _Esplora::noTone() {
   increment_counter(5);
-  _device.set_pin_value(SIM_BUZZER, 0);
-  send_pin_update();
+  ::noTone(BUZZER_PIN);
 }
 
-void esplora::tone(unsigned int freq) {
+void _Esplora::tone(unsigned int freq) {
   if (freq > 0) {
     increment_counter(7);
-    _device.set_pin_value(SIM_BUZZER, freq);
-    send_pin_update();
+    ::tone(BUZZER_PIN, freq);
   }
   else {
-    noTone(); 
+    ::noTone(BUZZER_PIN); 
   }
 }
 
 // TODO: implement duration timeout
-void esplora::tone(unsigned int freq, unsigned long duration) {
+void _Esplora::tone(unsigned int freq, unsigned long duration) {
   if (freq > 0 && duration > 0) {
     increment_counter(7);
-    _duration_left = duration;
-    _device.set_pin_value(SIM_BUZZER, freq);
+    ::tone(BUZZER_PIN, freq, duration);
   }
   else {
-    noTone();
+    ::noTone(BUZZER_PIN);
   }    
-  send_pin_update();
+}
+
+inline unsigned int readTinkerkitInput(byte whichInput) {
+  return _device.get_mux_value(whichInput + CH_TINKERKIT_A);
+}
+
+inline unsigned int readTinkerkitInputA() {
+  return _device.get_mux_value(CH_TINKERKIT_A);
+}
+
+inline unsigned int readTinkerkitInputB() {
+  return _device.get_mux_value(CH_TINKERKIT_B);
 }

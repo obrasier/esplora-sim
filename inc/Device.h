@@ -30,6 +30,7 @@
 #define SIM_BUZZER          6
 
 #define NUM_PINS            30
+#define MUX_PINS            13
 #define NUM_LEDS            25
 #define NUM_DIGITAL_PINS    30
 #define NUM_ANALOG_PINS     12
@@ -43,20 +44,9 @@ void increment_counter(int us);
 void send_pin_update();
 void send_led_update();
 
-
-
-enum class PinState {
-  FLOATING = 0,
-  INPUT,
-  OUTPUT,
-  INPUT_PULLUP,
-  PWM_OUTPUT
-};
-
-
 // Led for regular leds, the 4 on the top 
 // ON, L, TX, RX
-class Led
+class _Led
 {
 private:
   uint8_t _number;
@@ -65,11 +55,11 @@ private:
   bool is_on() {return _state;}
 
 public:
-  Led();
+  _Led();
   uint8_t brightness() {return _brightness;}
 };
 
-class RgbLed
+class _RgbLed
 {
 private:
   uint8_t _red;
@@ -78,7 +68,7 @@ private:
   std::array<uint8_t, 3> _rgb;
 
 public:
-  RgbLed();
+  _RgbLed();
   std::array<uint8_t, 3> get_rgb();
   void set_red(uint8_t red) {_red = red;}
   void set_green(uint8_t green) { _green = green;}
@@ -90,37 +80,42 @@ public:
 // The device class stores all the information required about a device.
 // It is designed to be thread-safe internally, so no external mutexs should
 // be required.
-class Device
+class _Device
 {
 private:
   std::array<int, NUM_PINS> _pin_values;
   std::array<int, NUM_LEDS> _led_values;
-  std::array<bool, NUM_PINS> _digital_states;
+  std::array<int, NUM_PINS> _digital_states;
   std::array<int, NUM_ANALOG_PINS> _analog_states;
-  std::array<PinState, NUM_PINS> _pin_modes;
+  std::array<int, NUM_PINS> _pin_modes;
   std::array<int, NUM_PINS> _pwm_dutycycle;
   std::array<int, NUM_PINS> _pwm_period;
+  std::array<int, MUX_PINS> _mux;
   uint64_t _micros_elapsed;
   std::mutex _m_device;
   std::mutex _m_micros;
   std::mutex _m_pins;
   std::mutex _m_modes;
   std::mutex _m_leds;
+  std::mutex _m_mux;
 
 public:
-  Device();
+  _Device();
   void set_pin_value(int pin, int value);
   int get_pin_value(int pin);
+  void set_mux_value(int pin, int value);
+  int get_mux_value(int pin);
   std::array<int, NUM_PINS> get_all_pins();
+  std::array<int, MUX_PINS> get_all_mux();
   void zero_all_pins();
-  void set_pin_mode(int pin, PinState mode);
-  PinState get_pin_mode(int pin);
+  void set_pin_mode(int pin, int mode);
+  int get_pin_mode(int pin);
   void set_pwm_dutycycle(int pin, uint32_t dutycycle);
   uint32_t get_pwm_dutycycle(int pin);
   void set_pwm_period(int pin, uint8_t period);
   uint8_t get_pwm_period(int pin);
-  void set_digital(int pin, bool level);
-  bool get_digital(int pin);
+  void set_digital(int pin, int level);
+  int get_digital(int pin);
   void set_analog(int pin, int value);
   int get_analog(int pin);
   std::array<int, NUM_LEDS> get_all_leds();

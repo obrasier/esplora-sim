@@ -3,124 +3,143 @@
 
 #include <iostream>
 
-Device::Device() {
+_Device::_Device() {
+
 }
 
-void Device::set_pin_value(int pin, int value) {
+void _Device::set_pin_value(int pin, int value) {
   _m_pins.lock();
   _pin_values[pin] = value;
   _m_pins.unlock();
 }
 
-int Device::get_pin_value(int pin) {
+int _Device::get_pin_value(int pin) {
   _m_pins.lock();
   int val =  _pin_values[pin];
   _m_pins.unlock();
   return val;
 }
 
-std::array<int, NUM_PINS> Device::get_all_pins() {
+void _Device::set_mux_value(int pin, int value) {
+  _m_mux.lock();
+  _mux[pin] = value;
+  _m_mux.unlock();
+}
+
+int _Device::get_mux_value(int pin) {
+  _m_mux.lock();
+  int m = _mux[pin];
+  _m_mux.unlock();
+  return m;
+}
+
+std::array<int, NUM_PINS> _Device::get_all_pins() {
   _m_pins.lock();
   std::array<int, NUM_PINS> p = _pin_values;
   _m_pins.unlock();
   return p;
 }
 
-void Device::zero_all_pins() {
+std::array<int, MUX_PINS> _Device::get_all_mux() {
+  _m_mux.lock();
+  std::array<int, MUX_PINS> m = _mux;
+  _m_mux.unlock();
+  return m;
+}
+
+
+void _Device::zero_all_pins() {
   _m_pins.lock();
   std::fill(_pin_values.begin(), _pin_values.end(), 0);
   _m_pins.unlock();
 }
 
 
-void Device::set_pin_mode(int pin, PinState mode) {
+void _Device::set_pin_mode(int pin, int mode) {
   _m_modes.lock();
   _pin_modes[pin] = mode;
   _m_modes.unlock();
 }
 
-PinState Device::get_pin_mode(int pin) {
+int _Device::get_pin_mode(int pin) {
   _m_modes.lock();
-  PinState p = _pin_modes[pin];
+  int p = _pin_modes[pin];
   _m_modes.unlock();
   return p;
 }
 
-void Device::set_pwm_dutycycle(int pin, uint32_t dutycycle) {
+void _Device::set_pwm_dutycycle(int pin, uint32_t dutycycle) {
   _m_device.lock();
   _pwm_dutycycle[pin] = dutycycle;
   _m_device.unlock();
 }
 
-uint32_t Device::get_pwm_dutycycle(int pin) {
+uint32_t _Device::get_pwm_dutycycle(int pin) {
   _m_device.lock();
   uint32_t duty = _pwm_dutycycle[pin]; 
   _m_device.unlock();
   return duty;
 }
 
-void Device::set_pwm_period(int pin, uint8_t period) {
+void _Device::set_pwm_period(int pin, uint8_t period) {
   _m_device.lock();
   _pwm_period[pin] = period;
   _m_device.unlock();
 }
 
-uint8_t Device::get_pwm_period(int pin) {
+uint8_t _Device::get_pwm_period(int pin) {
   _m_device.lock();
   uint8_t period =  _pwm_period[pin];
   _m_device.unlock();
   return period;
 }
 
-void Device::set_digital(int pin, bool level) {
+void _Device::set_digital(int pin, int level) {
   _m_device.lock();
   _digital_states[pin] = level;
   _m_device.unlock();
 }
 
-bool Device::get_digital(int pin) {
+int _Device::get_digital(int pin) {
   _m_device.lock();
-  bool state =  _digital_states[pin];
+  int state =  _digital_states[pin];
   _m_device.unlock();
   return state;
 }
 
-void Device::set_analog(int pin, int value) {
+void _Device::set_analog(int pin, int value) {
   _m_device.lock();
   _analog_states[pin] = value;
   _m_device.unlock();
 }
 
-int Device::get_analog(int pin) {
+int _Device::get_analog(int pin) {
   _m_device.lock();
   int val =  _analog_states[pin];
   _m_device.unlock();
   return val;
 }
 
-void Device::set_led(int led, uint8_t brightness) {
+void _Device::set_led(int led, uint8_t brightness) {
   _m_leds.lock();
   _led_values[led] = brightness;
   _m_leds.unlock();
 }
 
-std::array<int, NUM_LEDS> Device::get_all_leds() {
-  // std::vector<int> rgb = _rgb.get_rgb();
-  // std::vector<int> leds = _leds;
-  // leds.insert(leds.end(), rgb.begin(), rgb.end());
+std::array<int, NUM_LEDS> _Device::get_all_leds() {
   _m_leds.lock();
   std::array<int, NUM_LEDS> a = _led_values;
   _m_leds.unlock();
   return a;
 }
 
-void Device::increment_counter(uint32_t us) {
+void _Device::increment_counter(uint32_t us) {
   _m_micros.lock();
   _micros_elapsed += us;
   _m_micros.unlock();
 }
 
-uint64_t Device::get_micros() {
+uint64_t _Device::get_micros() {
   _m_micros.lock();
   uint64_t m = _micros_elapsed;
   _m_micros.unlock();
