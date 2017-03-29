@@ -43,7 +43,7 @@ private:
   byte lastRed;
   byte lastGreen;
   byte lastBlue;
-  uint32_t duration_left;
+  uint32_t _duration_left;
 
 public:
   int readSlider();

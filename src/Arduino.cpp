@@ -8,21 +8,21 @@
 void pinMode(uint8_t pin, int mode)
 {
 //  increment_counter(20);
-  if (mode == INPUT)
-    std::cout << "doing input pinmode" << std::endl;
-  else if (mode == OUTPUT)
-    std::cout << "doing output pinmode" << std::endl;
-  else if (mode == INPUT_PULLUP)
-    std::cout << "doing output pinmode" << std::endl;
+  // if (mode == INPUT)
+  //   std::cout << "doing input pinmode" << std::endl;
+  // else if (mode == OUTPUT)
+  //   std::cout << "doing output pinmode" << std::endl;
+  // else if (mode == INPUT_PULLUP)
+  //   std::cout << "doing output pinmode" << std::endl;
 
 }
 void digitalWrite(uint8_t pin, int value)
 {
 //  increment_counter(20);
-  if (value == 0)
-    std::cout << "doing digitalWrite low" << std::endl;
-  if (value == 1)
-    std::cout << "doing digitalWrite high" << std::endl;
+  // if (value == 0)
+  //   std::cout << "doing digitalWrite low" << std::endl;
+  // if (value == 1)
+  //   std::cout << "doing digitalWrite high" << std::endl;
 
 }
 int digitalRead(uint8_t pin)
@@ -47,16 +47,17 @@ int analogRead(uint8_t pin)
 //------ Advanced I/O ----------------------
 void tone(uint8_t pin, unsigned int freq)
 {
-  std::cout << "called tone" << std::endl;
 }
 
 void tone(uint8_t pin, unsigned int freq, unsigned long duration)
 {
+  tone(pin, freq);
+  // _Later turn_off_tone(duration, true, &noTone, pin);
 }
 
 void noTone(uint8_t pin)
 {
-  std::cout << "called noTone" << std::endl;
+  tone(pin, 0);
 }
 
 void shiftOut(int dataPin, int clockPin, int bitOrder, int value)
@@ -85,9 +86,7 @@ unsigned long pulseIn(uint8_t pin, int value, unsigned long timeout)
 unsigned long millis()
 {
 //  increment_counter(1);
-  m_elapsed.lock();
-  unsigned long e = micros_elapsed;
-  m_elapsed.unlock();
+  unsigned long e = _device.get_micros();
   return (int)e / 1000;
 }
 
@@ -96,9 +95,7 @@ unsigned long millis()
 unsigned long
 micros()
 {
-  m_elapsed.lock();
-  unsigned long e = micros_elapsed;
-  m_elapsed.unlock();
+  unsigned long e = _device.get_micros();
   int rem = e % 4;
   if (rem == 0)
     return e;

@@ -3,7 +3,7 @@
 #include <string>
 #include <cstring>
 #include "Arduino.h"
-#include "Hardware.h"
+#include "Device.h"
 #include "Serial.h"
 #include "WString.h"
 #include "ultoa.h"

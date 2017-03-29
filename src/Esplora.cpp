@@ -18,7 +18,7 @@
 */
 
 #include "Esplora.h"
-#include "Hardware.h"
+#include "Device.h"
 #include "global_variables.h"
 
 /*
@@ -59,25 +59,19 @@ const byte LED_PIN     = 13;
 //==========================================
 int esplora::readSlider() {
   increment_counter(128); // 128.2
-  m_pins.lock();
-  int val = x_pinValue[SIM_SLIDER];
-  m_pins.unlock();
+  int val = _device.get_pin_value(SIM_SLIDER);
   return val;
 }
 
 int esplora::readLightSensor() {
   increment_counter(128); // 128.2
-  m_pins.lock();
-  int val = x_pinValue[SIM_LIGHT];
-  m_pins.unlock();
+  int val = _device.get_pin_value(SIM_LIGHT);
   return val;
 }
 
 int esplora::readTemperature(byte scale) {
   increment_counter(128); // 128.2
-  m_pins.lock();
-  int raw = x_pinValue[SIM_TEMPERATURE];
-  m_pins.unlock();
+  int raw = _device.get_pin_value(SIM_TEMPERATURE);
   switch (scale) {
     case DEGREES_C: 
       return (int)((raw*500/1024)-50);
@@ -90,64 +84,49 @@ int esplora::readTemperature(byte scale) {
 
 int esplora::readMicrophone() {
   increment_counter(128); // 128.2 us
-  m_pins.lock();
-  int val = x_pinValue[SIM_MIC];
-  m_pins.unlock();
+  int val = _device.get_pin_value(SIM_MIC);
   return val;
 
 }
 
 int esplora::readJoystickSwitch() {
   increment_counter(30); // takes 30.2 us
-  m_pins.lock();
-  int val = x_pinValue[SIM_JOYSTICK_SW];
-  m_pins.unlock();
+  int val = _device.get_pin_value(SIM_JOYSTICK_SW);
   return val;
 }
 
 int esplora::readJoystickButton() {
   increment_counter(32); // 31.9 us
-  m_pins.lock();
-  int val = (x_pinValue[SIM_JOYSTICK_SW] == 1023) ? HIGH : LOW;
-  m_pins.unlock();
+  int val = (_device.get_pin_value(SIM_JOYSTICK_SW) == 1023) ? HIGH : LOW;
   return val;
 }
 
 int esplora::readAccelerometer(byte axis) {
   increment_counter(112); // 112.1
   int val;
-  m_pins.lock();
   switch (axis) {
-    case X_AXIS: val =  x_pinValue[SIM_ACCEL_X]; break;
-    case Y_AXIS: val =  x_pinValue[SIM_ACCEL_Y]; break;
-    case Z_AXIS: val =  x_pinValue[SIM_ACCEL_Z]; break;
+    case X_AXIS: val =  _device.get_pin_value(SIM_ACCEL_X); break;
+    case Y_AXIS: val =  _device.get_pin_value(SIM_ACCEL_Y); break;
+    case Z_AXIS: val =  _device.get_pin_value(SIM_ACCEL_Z); break;
   }
-  m_pins.unlock();
   return val;
 }
 
 int esplora::readButton(byte button) {
   increment_counter(136); // 136.01 us
-  m_pins.lock();
-  int val = (x_pinValue[button] > 0) ? HIGH : LOW;
-  m_pins.unlock();
+  int val = (_device.get_pin_value(button) > 0) ? HIGH : LOW;
   return val;
-
 }
 
 int esplora::readJoystickX() {
   increment_counter(128);
-  m_pins.lock();
-  int val = x_pinValue[SIM_JOYSTICK_X];
-  m_pins.unlock();
+  int val = _device.get_pin_value(SIM_JOYSTICK_X);
   return val;
 }
 
 int esplora::readJoystickY() {
   increment_counter(128);
-  m_pins.lock();
-  int val = x_pinValue[SIM_JOYSTICK_Y];
-  m_pins.unlock();
+  int val = _device.get_pin_value(SIM_JOYSTICK_Y);
   return val;
 }
 
@@ -158,44 +137,39 @@ void esplora::writeRGB(byte red, byte green, byte blue) {
 }
 
 void esplora::writeRed(byte red) {
+  if (red == lastRed) {
+    return;
+  }
   increment_counter(1);
-  m_pins.lock();
-  x_pinValue[SIM_RED] = red;
+  _device.set_pin_value(SIM_RED, red);
   lastRed = red;
-  m_pins.unlock();
   send_pin_update();
   int bright = map(red, 0, 255, 0, 9);
-  m_leds.lock();
-  x_leds[0] = bright;
-  m_leds.unlock();
+  _device.set_led(4, bright);
   send_led_update();
 }
 
 void esplora::writeGreen(byte green) {
+  if (green == lastGreen)
+    return;
   increment_counter(1);
-  m_pins.lock();
-  x_pinValue[SIM_GREEN] = green;
+  _device.set_pin_value(SIM_GREEN, green);
   lastGreen = green;
-  m_pins.unlock();
   send_pin_update();
   int bright = map(green, 0, 255, 0, 9);
-  m_leds.lock();
-  x_leds[1] = bright;
-  m_leds.unlock();
+  _device.set_led(5, bright);
   send_led_update();
 }
 
 void esplora::writeBlue(byte blue) {
+  if (blue == lastBlue)
+    return;
   increment_counter(1);
-  m_pins.lock();
-  x_pinValue[SIM_BLUE] = blue;
+  _device.set_pin_value(SIM_BLUE, blue);
   lastBlue = blue;
-  m_pins.unlock();
   send_pin_update();
   int bright = map(blue, 0, 255, 0, 9);
-  m_leds.lock();
-  x_leds[2] = bright;
-  m_leds.unlock();
+  _device.set_led(6, bright);
   send_led_update();
 }
 
@@ -213,18 +187,14 @@ byte esplora::readBlue() {
 
 void esplora::noTone() {
   increment_counter(5);
-  m_pins.lock();
-  x_pinValue[SIM_BUZZER] = 0;
-  m_pins.unlock();
+  _device.set_pin_value(SIM_BUZZER, 0);
   send_pin_update();
 }
 
 void esplora::tone(unsigned int freq) {
   if (freq > 0) {
     increment_counter(7);
-    m_pins.lock();
-    x_pinValue[SIM_BUZZER] = freq;
-    m_pins.unlock();
+    _device.set_pin_value(SIM_BUZZER, freq);
     send_pin_update();
   }
   else {
@@ -236,10 +206,8 @@ void esplora::tone(unsigned int freq) {
 void esplora::tone(unsigned int freq, unsigned long duration) {
   if (freq > 0 && duration > 0) {
     increment_counter(7);
-    m_pins.lock();
-    duration_left = duration;
-    x_pinValue[SIM_BUZZER] = freq;
-    m_pins.unlock();
+    _duration_left = duration;
+    _device.set_pin_value(SIM_BUZZER, freq);
   }
   else {
     noTone();

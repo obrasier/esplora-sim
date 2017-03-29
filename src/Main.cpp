@@ -19,7 +19,7 @@
 #include <array>
 #include <algorithm>
 #include "Arduino.h"
-#include "Hardware.h"
+#include "Device.h"
 #include "Serial.h"
 
 #include "global_variables.h"
@@ -28,10 +28,10 @@
 // SUPER DODGY!!!
 // Need to come up with a better way to do overflow etc.
 // At the moment none exists
-// #define arduino_int int
-// #define int int16_t
+#define arduino_int int
+#define int int16_t
 #include "sketch.ino"
-// #define int arduino_int
+#define int arduino_int
 
 
 using std::string;
@@ -45,22 +45,20 @@ extern "C" {
 #include "json.h"
 }
 
-std::mutex m_pins;
-std::mutex m_leds;
 
 
-std::mutex m_suspend;
-std::condition_variable cv_suspend;
+std::mutex _m_suspend;
+std::condition_variable _cv_suspend;
 
-// tells the code thread to shutdown, suspend or operate in fast_mode
-std::atomic<bool> shutdown(false);
-std::atomic<bool> suspend(false);
-std::atomic<bool> fast_mode(false);
+// tells the code thread to _shutdown, _suspend or operate in fast_mode
+std::atomic<bool> _shutdown(false);
+std::atomic<bool> _suspend(false);
+std::atomic<bool> _fast_mode(false);
 
 // send updates back to the browser
-std::atomic<bool> send_updates(true);
+std::atomic<bool> _send_updates(true);
 // run the student code
-std::atomic<bool> running(true);
+std::atomic<bool> _running(true);
 
 // File descriptor to write ___device_updates.
 int updates_fd = -1;
@@ -71,26 +69,27 @@ serial Serial;
 // Esplora
 esplora Esplora;
 
-// current loop number
-uint32_t current_loop = 0;
+std::mutex _m_device;
+Device _device;
 
-// mutex to protect the micros_elapsed variable
-std::mutex m_elapsed;
-uint64_t micros_elapsed = 0;
+// current loop number
+uint32_t _current_loop = 0;
+
+// mutex to protect the _micros_elapsed variable
+std::mutex _m_elapsed;
+uint64_t _micros_elapsed = 0;
 
 // to get appendf to work
-inline int
-min(int a, int b)
-{
-  return (a < b ? a : b);
-}
+// inline int
+// min(int a, int b)
+// {
+//   return (a < b ? a : b);
+// }
 
 // Elapsed time of the arduino in microseconds
 uint64_t
 get_elapsed_micros() {
-  m_elapsed.lock();
-  uint64_t e = micros_elapsed;
-  m_elapsed.unlock();
+  uint64_t e = _device.get_micros();
   return e;
 }
 
@@ -133,14 +132,13 @@ list_to_json(const char* field, char** json_ptr, char* json_end, int* values, si
 
 
 void send_pin_update() {
-  if (send_updates) {
+  if (_send_updates) {
     static int prev_pins[NUM_PINS] = {0};
     static int pins[NUM_PINS] = {0};
     int pwm_dutycycle[NUM_PINS] = {0};
     int pwm_period[NUM_PINS] = {0};
-    m_pins.lock();
-    memcpy(pins, x_pinValue, sizeof(x_pinValue));
-    m_pins.unlock();
+    std::array<int, NUM_PINS> curr_pins = _device.get_all_pins();
+    memcpy(pins, curr_pins.data(), sizeof(pins));
 
     if (memcmp(pins, prev_pins, sizeof(prev_pins)) != 0) {
       // pin states have changed
@@ -170,25 +168,24 @@ void send_pin_update() {
 
 void
 send_led_update() {
-  if (send_updates) {
-    static int prev_leds[25] = {0};
-    static int leds[25] = {0};
-    m_leds.lock();
-    memcpy(leds, x_leds, sizeof(x_leds));
-    m_leds.unlock();
-    if (memcmp(x_leds, prev_leds, sizeof(x_leds)) != 0) {
+  if (_send_updates) {
+    static int prev_leds[NUM_LEDS] = {0};
+    static int leds[NUM_LEDS] = {0};
+    std::array<int, NUM_LEDS> curr_leds = _device.get_all_leds();
+    memcpy(leds, curr_leds.data(), sizeof(leds));
+    if (memcmp(leds, prev_leds, sizeof(leds)) != 0) {
       char json[1024];
       char* json_ptr = json;
       char* json_end = json + sizeof(json);
       appendf(&json_ptr, json_end, "[{ \"type\": \"microbit_leds\", \"ticks\": %d, \"data\": {",
               get_elapsed_micros());
 
-      list_to_json("b", &json_ptr, json_end, x_leds, sizeof(x_leds) / sizeof(int));
+      list_to_json("b", &json_ptr, json_end, leds, sizeof(leds) / sizeof(int));
 
       appendf(&json_ptr, json_end, "}}]\n");
 
       write_to_updates(json, json_ptr - json, true);
-      memcpy(prev_leds, x_leds, sizeof(x_leds));
+      memcpy(prev_leds, leds, sizeof(leds));
     }
   }
 }
@@ -221,9 +218,7 @@ process_client_button(const json_value* data) {
   int switch_num = id->as.number;
   int val = (state->as.number == 0) ? 1 : 0;
 
-  m_pins.lock();
-  x_pinValue[switch_num + 1] = val; // offset of 1 for microbit_sim
-  m_pins.unlock();
+  _device.set_pin_value(switch_num + 1, val); // offset of 1 for microbit_sim
   write_event_ack("microbit_button", nullptr);
 }
 
@@ -235,9 +230,7 @@ process_client_temperature(const json_value* data) {
     fprintf(stderr, "Temperature event missing t\n");
     return;
   }
-  m_pins.lock();
-  x_pinValue[SIM_TEMPERATURE] = t->as.number;
-  m_pins.unlock();
+  _device.set_pin_value(SIM_TEMPERATURE, t->as.number);
   char ack_json[1024];
   snprintf(ack_json, sizeof(ack_json), "{\"t\": %d", static_cast<int32_t>(t->as.number));
   write_event_ack("temperature", ack_json);
@@ -251,9 +244,7 @@ process_client_light(const json_value* data) {
     fprintf(stderr, "Light event missing l\n");
     return;
   }
-  m_pins.lock();
-  x_pinValue[SIM_LIGHT] = l->as.number;
-  m_pins.unlock();
+  _device.set_pin_value(SIM_LIGHT, l->as.number);
   char ack_json[1024];
   snprintf(ack_json, sizeof(ack_json), "{\"l\": %d", static_cast<int32_t>(l->as.number));
   write_event_ack("light", ack_json);
@@ -267,9 +258,7 @@ process_client_slider(const json_value* data) {
     fprintf(stderr, "Slider event missing s\n");
     return;
   }
-  m_pins.lock();
-  x_pinValue[SIM_SLIDER] = s->as.number;
-  m_pins.unlock();
+  _device.set_pin_value(SIM_SLIDER, s->as.number);
   char ack_json[1024];
   snprintf(ack_json, sizeof(ack_json), "{\"s\": %d", static_cast<int32_t>(s->as.number));
   write_event_ack("slider", ack_json);
@@ -284,9 +273,7 @@ process_client_microphone(const json_value* data) {
     fprintf(stderr, "Microphone event missing mic\n");
     return;
   }
-  m_pins.lock();
-  x_pinValue[SIM_MIC] = mic->as.number;
-  m_pins.unlock();
+  _device.set_pin_value(SIM_MIC, mic->as.number);
   char ack_json[1024];
   snprintf(ack_json, sizeof(ack_json), "{\"mic\": %d", static_cast<int32_t>(mic->as.number));
   write_event_ack("mic", ack_json);
@@ -304,9 +291,7 @@ process_client_accel(const json_value* data) {
   }
   int pin_num = id->as.number;
   int val = state->as.number;
-  m_pins.lock();
-  x_pinValue[pin_num] = val;
-  m_pins.unlock();
+  _device.set_pin_value(pin_num, val);
   write_event_ack("accel", nullptr);
 }
 
@@ -317,9 +302,7 @@ process_client_joystick_sw(const json_value* data) {
     fprintf(stderr, "Joystick switch event missing j_sw\n");
     return;
   }
-  m_pins.lock();
-  x_pinValue[SIM_JOYSTICK_SW] = (j_sw->as.number == 0) ? 1023 : 0;
-  m_pins.unlock();
+  _device.set_pin_value(SIM_JOYSTICK_SW, (j_sw->as.number == 0) ? 1023 : 0);
   char ack_json[1024];
   snprintf(ack_json, sizeof(ack_json), "{\"j_sw\": %d", static_cast<int32_t>(j_sw->as.number));
   write_event_ack("joystick_switch", ack_json);
@@ -336,9 +319,7 @@ process_client_joystick(const json_value* data) {
   }
   int pin_num = id->as.number;
   int val = state->as.number;
-  m_pins.lock();
-  x_pinValue[pin_num] = val;
-  m_pins.unlock();
+  _device.set_pin_value(pin_num, val);
   write_event_ack("joystick", nullptr);
 }
 
@@ -353,9 +334,7 @@ process_client_pins(const json_value* data) {
   }
   int pin_num = id->as.number;
   int val = state->as.number;
-  m_pins.lock();
-  x_pinValue[pin_num] = val;
-  m_pins.unlock();
+  _device.set_pin_value(pin_num, val);
   write_event_ack("microbit_pin", nullptr);
 }
 
@@ -388,12 +367,12 @@ process_client_json(const json_value* json) {
       fprintf(stderr, "Event missing type and/or data.\n");
     } else {
       if (strncmp(event_type->as.string, "resume", 6) == 0) {
-        std::unique_lock<std::mutex> lk(m_suspend);
-        suspend = false;
-        cv_suspend.notify_all();
+        std::unique_lock<std::mutex> lk(_m_suspend);
+        _suspend = false;
+        _cv_suspend.notify_all();
       } else if (strncmp(event_type->as.string, "suspend", 7) == 0) {
-        std::unique_lock<std::mutex> lk(m_suspend);
-        suspend = true;
+        std::unique_lock<std::mutex> lk(_m_suspend);
+        _suspend = true;
       } else if (strncmp(event_type->as.string, "microbit_button", 15) == 0) {
         // Button state change.
         process_client_button(event_data);
@@ -475,15 +454,11 @@ process_client_event(int fd) {
 void
 set_esplora_state() {
   int switches[4] = {SIM_SWITCH_1, SIM_SWITCH_2, SIM_SWITCH_3, SIM_SWITCH_4};
-  int i;
-  m_pins.lock();
-  for (i = 0; i < NUM_PINS; i++)
-    x_pinValue[i] = 0;
+  _device.zero_all_pins();
   // set switches to be high (active low)
-  for (i = 0; i < 4; i++)
-    x_pinValue[switches[i]] = HIGH;
-  x_pinValue[SIM_JOYSTICK_SW] = 1023;
-  m_pins.unlock();
+  for (int i = 1; i < 5; i++)
+    _device.set_pin_value(switches[i], HIGH);
+  _device.set_pin_value(SIM_JOYSTICK_SW, 1023);
   send_pin_update();
 }
 
@@ -500,29 +475,22 @@ setup_output_pipe() {
 
 }
 
-
-
-
-
 // Run the Arduino code
 void
 run_code()
 {
-
-
   setup();
   increment_counter(1032); // takes 1032 us for setup to run
-  while (running) {
-    current_loop++;
+  while (_running) {
+    _current_loop++;
     loop();
   }
 }
 
 void
 sig_handler(int s) {
-  std::cout << "\nCaught signal " << s << std::endl;
-  shutdown = true;
-  running = false;
+  _shutdown = true;
+  _running = false;
 }
 
 void
@@ -583,7 +551,7 @@ main_thread() {
   }
 
   int epoll_timeout = 50;
-  while (!shutdown) {
+  while (!_shutdown) {
     struct epoll_event events[MAX_EVENTS];
     int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, epoll_timeout);
 
@@ -591,7 +559,7 @@ main_thread() {
       if (errno == EINTR) {
         // Timeout or interrupted.
         // Allow the vm branch hook to proceed.
-        // Continue so that we'll catch the shutdown flag above (if it's set, otherwise continue as
+        // Continue so that we'll catch the _shutdown flag above (if it's set, otherwise continue as
         // normal).
         continue;
       }

@@ -5,7 +5,6 @@
 #include "wiring.h"
 #include <stdint.h>
 
-#define INPUT_PULLUP 2
 
 #define HIGH 0x1
 #define LOW  0x0
@@ -18,6 +17,34 @@
 
 typedef uint8_t byte;
 typedef bool boolean;
+
+// Class to run code after n milliseconds, used for the tone duration timer
+// Arguments:
+//    int - milliseconds until code is run
+//    bool - if true, spawns a new thread and returns instantly
+//    variable arguments (what you feed into std::bind)
+// class _Later
+// {
+// public:
+//   template <class callable, class... arguments>
+//   _Later(int after, bool async, callable&& f, arguments&&... args)
+//   {
+//     std::function<typename std::result_of<callable(arguments...)>::type()> task(std::bind(std::forward<callable>(f), std::forward<arguments>(args)...));
+
+//     if (async)
+//     {
+//       std::thread([after, task]() {
+//         std::this_thread::sleep_for(std::chrono::milliseconds(after));
+//         task();
+//       }).detach();
+//     }
+//     else
+//     {
+//       std::this_thread::sleep_for(std::chrono::milliseconds(after));
+//       task();
+//     }
+//   }
+// };
 
 
 void pinMode(uint8_t pin, int mode);
@@ -52,4 +79,9 @@ long random(long lowerLimit, long upperLimit);
 
 // in Hardware.cpp
 void increment_counter(int us);
+
+// in sketch.ino
+void setup();
+void loop();
+
 #endif
