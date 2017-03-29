@@ -77,6 +77,8 @@ uint32_t _current_loop = 0;
 std::mutex _m_elapsed;
 uint64_t _micros_elapsed = 0;
 
+
+
 // Elapsed time of the arduino in microseconds
 uint64_t
 get_elapsed_micros() {
@@ -130,7 +132,13 @@ void send_pin_update() {
     int pwm_dutycycle[NUM_PINS] = {0};
     int pwm_period[NUM_PINS] = {0};
     std::array<int, NUM_PINS> curr_pins = _device.get_all_pins();
+    for (auto i : curr_pins)
+      std::cout << i << ' ';
+    std::cout << std::endl;
     std::array<int, MUX_PINS> curr_mux = _device.get_all_mux();
+    for (auto i : curr_mux)
+      std::cout << i << ' ';
+    std::cout << std::endl;
     memcpy(pins, curr_pins.data(), sizeof(pins));
     memcpy(mux, curr_mux.data(), sizeof(mux));
 
@@ -214,7 +222,7 @@ process_client_button(const json_value* data) {
   int switch_num = id->as.number;
   int val = (state->as.number == 0) ? 1 : 0;
 
-  _device.set_mux_value(switch_num, val); 
+  _device.set_mux_value(switch_num, val);
   write_event_ack("microbit_button", nullptr);
 }
 
@@ -305,7 +313,7 @@ process_client_joystick_sw(const json_value* data) {
   write_event_ack("joystick_switch", ack_json);
 }
 
-// Process a joystick event. Note the joystick is 11 and 12 on 
+// Process a joystick event. Note the joystick is 11 and 12 on
 // the multiplexer, so we apply an offset of 11 to the value.
 void
 process_client_joystick(const json_value* data) {

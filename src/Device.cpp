@@ -21,6 +21,7 @@ int _Device::get_pin_value(int pin) {
 }
 
 void _Device::set_mux_value(int pin, int value) {
+  std::cout << "setting pin " << pin << " : " << value << std::endl;
   _m_mux.lock();
   _mux[pin] = value;
   _m_mux.unlock();

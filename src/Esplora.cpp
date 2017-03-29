@@ -21,7 +21,7 @@
 #include "Device.h"
 #include "global_variables.h"
 
-
+#include <iostream>
 
 /*
  * The following constants tell, for each accelerometer
@@ -107,6 +107,12 @@ int _Esplora::readAccelerometer(byte axis) {
 }
 
 int _Esplora::readButton(byte button) {
+  if(button >= SWITCH_1 && button <= SWITCH_4) {
+    button--;
+  }
+  else {
+    return HIGH;
+  }
   increment_counter(136); // 136.01 us
   return (_device.get_mux_value(button) > 0) ? HIGH : LOW;
 }
