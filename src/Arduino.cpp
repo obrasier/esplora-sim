@@ -11,7 +11,7 @@ void pinMode(int pin, int mode) {
   _device.set_pin_mode(pin, mode);
 }
 
-void digitalWrite(int pin, int value) {
+void digitalWrite(int pin, byte value) {
   if (pin > NUM_PINS || pin <= 0)
     return;
   _device.set_digital(pin, (value) ? HIGH : LOW);
@@ -26,15 +26,11 @@ int digitalRead(int pin)
   return _device.get_pin_value(pin);
 }
 
-void analogWrite(int pin, int value) //PWM
+void analogWrite(int pin, byte value) //PWM
 {
   if (pin <= 0 || pin > NUM_PINS)
     return;
   pinMode(pin, OUTPUT);
-  if (value > 255)
-    value = 255;
-  if (value < 0)
-    value = 0;
   _device.set_pin_value(pin, value);
   _device.set_pwm_dutycycle(pin, value);
   send_pin_update();
@@ -85,7 +81,6 @@ int shiftIn(int dataPin, int clockPin, int bitOrder)
 
 unsigned long millis()
 {
-//  increment_counter(1);
   unsigned long e = _device.get_micros();
   return e / 1000;
 }
@@ -123,13 +118,11 @@ int map(int x, int fromLow, int fromHigh, int toLow, int toHigh)
 //------ Random Numbers --------------------
 void randomSeed(int seed)
 {
-//  increment_counter(100);
   srand(seed);
 }
 
 long random(long upperLimit)
 {
-//  increment_counter(100);
   long x = RAND_MAX / upperLimit;
   x = long(rand() / x);
   return (x);
@@ -137,7 +130,6 @@ long random(long upperLimit)
 
 long random(long lowerLimit, long upperLimit)
 {
-//  increment_counter(100);
   long interval, temp = 0;
   if (lowerLimit < upperLimit)
   {

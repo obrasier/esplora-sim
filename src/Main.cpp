@@ -1,3 +1,24 @@
+/*
+  Arduino Simulator - An Arduino Esplora simulator
+  Copyright (c) 2017 Australian Computing Academy.  All right reserved.
+  Written by Owen Brasier, Jim Mussared
+  
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 3 of the License, or (at your option) any later version.
+  
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -31,13 +52,6 @@
 #define int int16_t
 #include "sketch.ino"
 #define int arduino_int
-
-
-using std::string;
-using std::ostream;
-using std::istream;
-using std::stringstream;
-
 
 extern "C" {
 #include "buffer.h"
@@ -461,6 +475,7 @@ void
 set_esplora_state() {
   int switches[4] = {CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4};
   _device.zero_all_pins();
+  _device.set_led(0, 255);
   // set switches to be high (active low)
   for (int i = 0; i < 4; i++)
     _device.set_mux_value(switches[i], HIGH);
