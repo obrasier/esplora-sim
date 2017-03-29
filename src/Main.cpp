@@ -122,6 +122,14 @@ list_to_json(const char* field, char** json_ptr, char* json_end, int* values, si
   }
 }
 
+void print_arrays(std::array<int, NUM_PINS> pins, std::array<int, MUX_PINS> mux) {
+  for (auto i : pins)
+    std::cout << i << ' ';
+  std::cout << std::endl;
+  for (auto i : mux)
+    std::cout << i << ' ';
+  std::cout << std::endl;
+}
 
 void send_pin_update() {
   if (_send_updates) {
@@ -132,13 +140,7 @@ void send_pin_update() {
     int pwm_dutycycle[NUM_PINS] = {0};
     int pwm_period[NUM_PINS] = {0};
     std::array<int, NUM_PINS> curr_pins = _device.get_all_pins();
-    for (auto i : curr_pins)
-      std::cout << i << ' ';
-    std::cout << std::endl;
     std::array<int, MUX_PINS> curr_mux = _device.get_all_mux();
-    for (auto i : curr_mux)
-      std::cout << i << ' ';
-    std::cout << std::endl;
     memcpy(pins, curr_pins.data(), sizeof(pins));
     memcpy(mux, curr_mux.data(), sizeof(mux));
 
@@ -415,7 +417,6 @@ process_client_json(const json_value* json) {
       }
       char msg_text[120];
       sprintf(msg_text, "event type: %s", event_type->as.string);
-      std::cout << msg_text << std::endl;
     }
     event = event->next;
   }
