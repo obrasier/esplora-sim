@@ -41,7 +41,7 @@ private:
     using sys_time = std::chrono::time_point<std::chrono::system_clock, Duration>;
 
   sys_time<std::chrono::microseconds> _clock_start;
-  uint32_t _clock_offset_us;
+  std::atomic<uint32_t> _clock_offset_us;
 
   std::array<int, NUM_PINS> _pin_values;
   std::array<int, NUM_LEDS> _led_values;

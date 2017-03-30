@@ -504,6 +504,8 @@ run_code()
   while (_running) {
     _current_loop++;
     loop();
+    check_suspend();
+    check_shutdown();
   }
 }
 
@@ -661,16 +663,16 @@ main(int argc, char** argv) {
   handle_sigint.sa_flags = 0;
   sigaction(SIGINT, &handle_sigint, NULL);
 
-  // setup 
+  // setup
   setup_output_pipe();
   set_esplora_state();
 
   // run the code
-  std::thread code_thread(code_thread_main);  
+  std::thread code_thread(code_thread_main);
   code_thread.detach();
 
   // start the main thread to read data
-  main_thread();                    
+  main_thread();
   close(updates_fd);
   return EXIT_SUCCESS;
 }

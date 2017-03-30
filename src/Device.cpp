@@ -8,8 +8,8 @@ _Device::_Device() {
   _clock_offset_us = 0;
 }
 
-void _Device::add_offset(uint32_t _us) {
-  _clock_offset_us += _us;
+void _Device::add_offset(uint32_t us) {
+  _clock_offset_us += us;
 }
 
 void _Device::increment_counter(uint32_t us) {
