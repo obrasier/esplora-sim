@@ -31,19 +31,16 @@ void _Serial::end()
 
 int _Serial::available()  // returns the number of bytes available to read
 {
-//  increment_counter(12);
   return (1);
 }
 
 char _Serial::read() // the first byte of incoming serial data available (or -1 if no data is available)
 {
-//  increment_counter(100);
   return (-1);
 }
 
 int _Serial::peek()
 {
-//  increment_counter(100);
   return (-1);
 }
 
@@ -53,21 +50,19 @@ void _Serial::flush()
 
 void _Serial::print(int x)
 {
-//  increment_counter(100);
+  
   std::cout << x;
 
 }
 
 void _Serial::print(float x)
 {
-//  increment_counter(100);
   std::cout << x;
 
 }
 
 void _Serial::print(std::string s)
 {
-  increment_counter(28);
   const char *p;
   p = s.c_str();
   std::cout << p;
@@ -76,7 +71,6 @@ void _Serial::print(std::string s)
 
 void _Serial::print(unsigned int x, int base)
 {
-//  increment_counter(16);
   char buf[2 + 8 * sizeof(unsigned int)];
   if (base == BIN || base == OCT || base == DEC || base == HEX) {
     utoa(x, buf, base);
@@ -87,7 +81,6 @@ void _Serial::print(unsigned int x, int base)
 
 void _Serial::print(int x, int base)
 {
-//  increment_counter(16);
   char buf[2 + 8 * sizeof(int)];
   if (base == BIN || base == OCT || base == DEC || base == HEX) {
     itoa(x, buf, base);
@@ -102,7 +95,7 @@ void _Serial::print(const String &s)
     putchar(s[i]);
   }
   fflush(stdout);
-  increment_counter(28 + (14 * s.length()));
+  // increment_counter(28 + (14 * s.length()));
 }
 
 
@@ -111,19 +104,17 @@ void _Serial::print(const char *p)
   std::cout << p;
   int len = strlen(p);
   // measured on Arduino esplora 9600 baud
-  increment_counter(28 + (14 * len));
+  // increment_counter(28 + (14 * len));
 }
 
 void _Serial::print(unsigned char uc)
 {
-  increment_counter(28);
   std::cout << uc;
   fflush(stdout);
 }
 
 void _Serial::println()
 {
-  increment_counter(28); // measured on Esplora
   _ln_flush();
 }
 

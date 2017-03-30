@@ -13,19 +13,14 @@ void _Device::add_offset(uint32_t us) {
 }
 
 void _Device::increment_counter(uint32_t us) {
-  _m_micros.lock();
   _micros_elapsed += us;
-  _m_micros.unlock();
 }
 
 uint64_t _Device::get_micros() {
   sys_time<std::chrono::microseconds> clock_now = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
   auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(clock_now - _clock_start);
-  uint64_t e = elapsed.count() + _clock_offset_us;
-  _m_micros.lock();
-  _micros_elapsed = e;
-  _m_micros.unlock();
-  return e;
+  _micros_elapsed = elapsed.count() + _clock_offset_us;
+  return _micros_elapsed;
 }
 
 void _Device::set_pin_value(int pin, int value) {

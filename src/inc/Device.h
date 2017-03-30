@@ -41,7 +41,9 @@ private:
     using sys_time = std::chrono::time_point<std::chrono::system_clock, Duration>;
 
   sys_time<std::chrono::microseconds> _clock_start;
+
   std::atomic<uint32_t> _clock_offset_us;
+  std::atomic<uint64_t> _micros_elapsed;
 
   std::array<int, NUM_PINS> _pin_values;
   std::array<int, NUM_LEDS> _led_values;
@@ -51,9 +53,8 @@ private:
   std::array<int, NUM_PINS> _pwm_dutycycle;
   std::array<int, NUM_PINS> _pwm_period;
   std::array<int, MUX_PINS> _mux;
-  uint64_t _micros_elapsed;
+  
   std::mutex _m_device;
-  std::mutex _m_micros;
   std::mutex _m_pins;
   std::mutex _m_modes;
   std::mutex _m_leds;

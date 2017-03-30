@@ -2,7 +2,7 @@ CC=clang
 CXX=clang++
 INC=-I./inc/json -I./inc -I./json -I./sketch
 TARGET=esplora_sim
-CPPFLAGS= -fsanitize=address -std=c++11
+CPPFLAGS= -fsanitize=address -std=c++11 -W -Wall -pedantic
 LIBS= -lpthread
 SRC=Arduino.cpp Device.cpp WString.cpp Serial.cpp ultoa.cpp Esplora.cpp Main.cpp
 OBJS= $(SRC:.cpp=.o)

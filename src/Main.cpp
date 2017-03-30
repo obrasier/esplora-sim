@@ -17,8 +17,6 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -84,13 +82,7 @@ _Esplora Esplora;
 _Device _device;
 
 // current loop number
-uint32_t _current_loop = 0;
-
-// mutex to protect the _micros_elapsed variable
-std::mutex _m_elapsed;
-uint64_t _micros_elapsed = 0;
-
-
+std::atomic<uint32_t> _current_loop(0);
 
 // Elapsed time of the arduino in microseconds
 uint64_t
@@ -435,6 +427,7 @@ process_client_json(const json_value* json) {
   }
 }
 
+//
 void
 process_client_event(int fd) {
   char buf[10240];
@@ -472,12 +465,13 @@ process_client_event(int fd) {
 // a slider event on startup based on it's position.
 void
 set_esplora_state() {
-  int switches[4] = {CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4};
+  // double braces stops clang++ warning bug
+  std::array<int, 4> switches {{ CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4 }};
   _device.zero_all_pins();
   _device.set_led(0, 255);
   // set switches to be high (active low)
-  for (int i = 0; i < 4; i++)
-    _device.set_mux_value(switches[i], HIGH);
+  for (const auto &elem : switches)
+    _device.set_mux_value(elem, HIGH);
   _device.set_mux_value(CH_JOYSTICK_SW, 1023);
   send_pin_update();
 }
@@ -500,7 +494,7 @@ void
 run_code()
 {
   setup();
-  increment_counter(1032); // takes 1032 us for setup to run
+  // increment_counter(1032); // takes 1032 us for setup to run
   while (_running) {
     _current_loop++;
     loop();

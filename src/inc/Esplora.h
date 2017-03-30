@@ -28,13 +28,13 @@ const byte SWITCH_2       = 2;
 const byte SWITCH_3       = 3;
 const byte SWITCH_4       = 4;
 
-const byte SWITCH_DOWN  = SWITCH_1;
-const byte SWITCH_LEFT  = SWITCH_2;
-const byte SWITCH_UP    = SWITCH_3;
-const byte SWITCH_RIGHT = SWITCH_4;
-
-const boolean PRESSED   = LOW;
-const boolean RELEASED  = HIGH;
+const byte SWITCH_DOWN    = SWITCH_1;
+const byte SWITCH_LEFT    = SWITCH_2;
+const byte SWITCH_UP      = SWITCH_3;
+const byte SWITCH_RIGHT   = SWITCH_4;
+  
+const boolean PRESSED     = LOW;
+const boolean RELEASED    = HIGH;
 
 /*
  * The following constants can be used with the readTemperature()
@@ -65,6 +65,7 @@ private:
   byte lastBlue;
 
 public:
+  _Esplora();
   int readSlider();
   int readLightSensor();
   int readTemperature(byte scale);

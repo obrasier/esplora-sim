@@ -28,14 +28,6 @@
  * axis, which values are returned when the axis measures
  * zero acceleration.
  */
-const int ACCEL_ZERO_X = 320;
-const int ACCEL_ZERO_Y = 330;
-const int ACCEL_ZERO_Z = 310;
-
-const byte MUX_ADDR_PINS[] = { A0, A1, A2, A3 };
-const byte MUX_COM_PIN = A4;
-
-const int JOYSTICK_DEAD_ZONE = 100;
 
 const byte RED_PIN    = 5;
 const byte BLUE_PIN   = 9;
@@ -59,6 +51,13 @@ const byte LED_PIN     = 13;
 //==========================================
 // Esplora
 //==========================================
+
+_Esplora::_Esplora() {
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
+}
+
 int _Esplora::readSlider() {
   return _device.get_mux_value(CH_SLIDER);
 }
@@ -70,10 +69,10 @@ int _Esplora::readLightSensor() {
 int _Esplora::readTemperature(byte scale) {
   float temp = _device.get_mux_value(CH_TEMPERATURE);
   if (scale == DEGREES_F){
-    return (int)(temp*9)/5 + 32;
+    return (int)((temp*9)/5) + 32;
   }
   else {
-    return int(temp);
+    return (int)temp;
   }
 }
 
@@ -92,9 +91,9 @@ int _Esplora::readJoystickButton() {
 int _Esplora::readAccelerometer(byte axis) {
   int val;
   switch (axis) {
-    case X_AXIS: val =  _device.get_pin_value(SIM_ACCEL_X); break;
-    case Y_AXIS: val =  _device.get_pin_value(SIM_ACCEL_Y); break;
-    case Z_AXIS: val =  _device.get_pin_value(SIM_ACCEL_Z); break;
+    case X_AXIS: val =  _device.get_pin_value(ACCEL_X_PIN); break;
+    case Y_AXIS: val =  _device.get_pin_value(ACCEL_Y_PIN); break;
+    case Z_AXIS: val =  _device.get_pin_value(ACCEL_Z_PIN); break;
   }
   return val;
 }
@@ -126,7 +125,7 @@ void _Esplora::writeRGB(byte red, byte green, byte blue) {
 void _Esplora::writeRed(byte red) {
   if (red == lastRed) 
     return;
-  analogWrite(SIM_RED, red);
+  analogWrite(RED_PIN, red);
   lastRed = red;
   send_pin_update();
   int bright = map(red, 0, 255, 0, 9);
@@ -137,7 +136,7 @@ void _Esplora::writeRed(byte red) {
 void _Esplora::writeGreen(byte green) {
   if (green == lastGreen)
     return;
-  analogWrite(SIM_GREEN, green);
+  analogWrite(GREEN_PIN, green);
   lastGreen = green;
   send_pin_update();
   int bright = map(green, 0, 255, 0, 9);
@@ -148,7 +147,7 @@ void _Esplora::writeGreen(byte green) {
 void _Esplora::writeBlue(byte blue) {
   if (blue == lastBlue)
     return;
-  analogWrite(SIM_BLUE, blue);
+  analogWrite(BLUE_PIN, blue);
   lastBlue = blue;
   int bright = map(blue, 0, 255, 0, 9);
   _device.set_led(2, bright);

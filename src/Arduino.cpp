@@ -6,14 +6,12 @@
 #include "global_variables.h"
 
 void pinMode(int pin, int mode) {
-  increment_counter(0);
   if (pin > NUM_PINS || pin <= 0)
     return;
   _device.set_pin_mode(pin, mode);
 }
 
 void digitalWrite(int pin, byte value) {
-  increment_counter(0);
   if (pin > NUM_PINS || pin <= 0)
     return;
   _device.set_digital(pin, (value) ? HIGH : LOW);
@@ -22,7 +20,6 @@ void digitalWrite(int pin, byte value) {
 }
 
 int digitalRead(int pin) {
-  increment_counter(0);
   if (pin > NUM_PINS || pin <= 0)
     return 0;
   return _device.get_pin_value(pin);
@@ -32,7 +29,6 @@ void analogWrite(int pin, byte value) //PWM
 {
   if (pin <= 0 || pin > NUM_PINS)
     return;
-  increment_counter(0);
   pinMode(pin, OUTPUT);
   _device.set_pin_value(pin, value);
   _device.set_pwm_dutycycle(pin, value);
@@ -41,7 +37,6 @@ void analogWrite(int pin, byte value) //PWM
 
 int analogRead(int pin)
 {
-  increment_counter(6);
   if (pin <= 0 || pin > NUM_PINS)
     return 0;
   return _device.get_pin_value(pin);
@@ -52,7 +47,6 @@ void tone(unsigned int pin, unsigned int freq)
 {
   if (pin > NUM_PINS || pin <= 0)
     return;
-  increment_counter(6);
   _device.set_pin_value(pin, freq);
   send_pin_update();
 }
@@ -105,8 +99,9 @@ micros()
 void delay(uint32_t ms)
 {
   if (_fast_mode)
-    _device.add_offset(ms * 1000);
+    _device.add_offset(ms * 1000UL);
   else
+    
     std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
