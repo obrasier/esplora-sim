@@ -46,7 +46,7 @@ int analogRead(int pin)
 //------ Advanced I/O ----------------------
 void tone(unsigned int pin, unsigned int freq)
 {
-  if(pin > NUM_PINS || pin <= 0)
+  if (pin > NUM_PINS || pin <= 0)
     return;
   _device.set_pin_value(pin, freq);
   send_pin_update();
@@ -54,7 +54,7 @@ void tone(unsigned int pin, unsigned int freq)
 
 void tone(unsigned int pin, unsigned int freq, unsigned long duration)
 {
-  if(pin > NUM_PINS || pin <= 0)
+  if (pin > NUM_PINS || pin <= 0)
     return;
   tone(pin, freq);
   _Later turn_off_tone(duration, true, &noTone, pin);
@@ -99,12 +99,18 @@ micros()
 
 void delay(uint32_t ms)
 {
-  increment_counter(ms * 1000);
+  if (_fast_mode)
+    _device.add_offset(ms * 1000);
+  else
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
 void delayMicroseconds(uint32_t us)
 {
-  increment_counter(us);
+  if (_fast_mode)
+    _device.add_offset(us);
+  else
+    std::this_thread::sleep_for(std::chrono::microseconds(us));
 }
 
 int map(int x, int fromLow, int fromHigh, int toLow, int toHigh)

@@ -60,17 +60,14 @@ const byte LED_PIN     = 13;
 // Esplora
 //==========================================
 int _Esplora::readSlider() {
-  increment_counter(128); // 128.2
   return _device.get_mux_value(CH_SLIDER);
 }
 
 int _Esplora::readLightSensor() {
-  increment_counter(128); // 128.2
   return _device.get_mux_value(CH_LIGHT);
 }
 
 int _Esplora::readTemperature(byte scale) {
-  increment_counter(128); // 128.2
   float temp = _device.get_mux_value(CH_TEMPERATURE);
   if (scale == DEGREES_F){
     return (int)(temp*9)/5 + 32;
@@ -81,22 +78,18 @@ int _Esplora::readTemperature(byte scale) {
 }
 
 int _Esplora::readMicrophone() {
-  increment_counter(128); // 128.2 us
   return _device.get_mux_value(CH_MIC);
 }
 
 int _Esplora::readJoystickSwitch() {
-  increment_counter(30); // takes 30.2 us
   return _device.get_mux_value(CH_JOYSTICK_SW);
 }
 
 int _Esplora::readJoystickButton() {
-  increment_counter(32); // 31.9 us
   return (_device.get_mux_value(CH_JOYSTICK_SW) == 1023) ? HIGH : LOW;
 }
 
 int _Esplora::readAccelerometer(byte axis) {
-  increment_counter(112); // 112.1
   int val;
   switch (axis) {
     case X_AXIS: val =  _device.get_pin_value(SIM_ACCEL_X); break;
@@ -113,17 +106,14 @@ int _Esplora::readButton(byte button) {
   else {
     return HIGH;
   }
-  increment_counter(136); // 136.01 us
   return (_device.get_mux_value(button) > 0) ? HIGH : LOW;
 }
 
 int _Esplora::readJoystickX() {
-  increment_counter(128);
   return _device.get_mux_value(CH_JOYSTICK_X);
 }
 
 int _Esplora::readJoystickY() {
-  increment_counter(128);
   return _device.get_mux_value(CH_JOYSTICK_Y);
 }
 
@@ -136,7 +126,6 @@ void _Esplora::writeRGB(byte red, byte green, byte blue) {
 void _Esplora::writeRed(byte red) {
   if (red == lastRed) 
     return;
-  increment_counter(1);
   analogWrite(SIM_RED, red);
   lastRed = red;
   send_pin_update();
@@ -148,7 +137,6 @@ void _Esplora::writeRed(byte red) {
 void _Esplora::writeGreen(byte green) {
   if (green == lastGreen)
     return;
-  increment_counter(1);
   analogWrite(SIM_GREEN, green);
   lastGreen = green;
   send_pin_update();
@@ -160,7 +148,6 @@ void _Esplora::writeGreen(byte green) {
 void _Esplora::writeBlue(byte blue) {
   if (blue == lastBlue)
     return;
-  increment_counter(1);
   analogWrite(SIM_BLUE, blue);
   lastBlue = blue;
   int bright = map(blue, 0, 255, 0, 9);
@@ -181,13 +168,11 @@ byte _Esplora::readBlue() {
 }
 
 void _Esplora::noTone() {
-  increment_counter(5);
   ::noTone(BUZZER_PIN);
 }
 
 void _Esplora::tone(unsigned int freq) {
   if (freq > 0) {
-    increment_counter(7);
     ::tone(BUZZER_PIN, freq);
   }
   else {
@@ -198,7 +183,6 @@ void _Esplora::tone(unsigned int freq) {
 // TODO: implement duration timeout
 void _Esplora::tone(unsigned int freq, unsigned long duration) {
   if (freq > 0 && duration > 0) {
-    increment_counter(7);
     ::tone(BUZZER_PIN, freq, duration);
   }
   else {

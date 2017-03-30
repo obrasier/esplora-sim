@@ -8,19 +8,6 @@
 #include <thread>
 #include <algorithm>
 
-#define SIM_SWITCH_1        1
-#define SIM_SWITCH_2        2
-#define SIM_SWITCH_3        3
-#define SIM_SWITCH_4        4
-#define SIM_SLIDER          7
-#define SIM_LIGHT           8
-#define SIM_TEMPERATURE     11
-#define SIM_MIC             12
-#define SIM_TINKERKIT_INA   13  // tinkerkit input
-#define SIM_TINKERKIT_INB   14  // tinkerkit input
-#define SIM_JOYSTICK_SW     15
-#define SIM_JOYSTICK_X      16
-#define SIM_JOYSTICK_Y      17
 #define SIM_RED             5
 #define SIM_GREEN           9
 #define SIM_BLUE            10
@@ -50,6 +37,12 @@ void send_led_update();
 class _Device
 {
 private:
+  template <class Duration>
+    using sys_time = std::chrono::time_point<std::chrono::system_clock, Duration>;
+
+  sys_time<std::chrono::microseconds> _clock_start;
+  uint32_t _clock_offset_us;
+
   std::array<int, NUM_PINS> _pin_values;
   std::array<int, NUM_LEDS> _led_values;
   std::array<int, NUM_PINS> _digital_states;
@@ -69,6 +62,7 @@ private:
 
 public:
   _Device();
+  void add_offset(uint32_t _us);
   void set_pin_value(int pin, int value);
   int get_pin_value(int pin);
   void set_mux_value(int pin, int value);

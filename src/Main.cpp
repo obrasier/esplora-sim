@@ -2,17 +2,17 @@
   Arduino Simulator - An Arduino Esplora simulator
   Copyright (c) 2017 Australian Computing Academy.  All right reserved.
   Written by Owen Brasier, Jim Mussared
-  
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
   version 3 of the License, or (at your option) any later version.
-  
+
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Lesser General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -59,7 +59,6 @@ extern "C" {
 }
 
 
-
 std::mutex _m_suspend;
 std::condition_variable _cv_suspend;
 
@@ -102,7 +101,7 @@ get_elapsed_micros() {
 // Write to the output pipe
 // Add a 5 us delay to stop data corruption from spamming the command line gui
 void
-write_to_updates(const void* buf, size_t count, bool should_suspend = false) {
+write_to_updates(const void* buf, size_t count) {
   write(updates_fd, buf, count);
   // std::this_thread::sleep_for(std::chrono::microseconds(5));
 }
@@ -178,7 +177,7 @@ void send_pin_update() {
       list_to_json("pwmp", &json_ptr, json_end, pwm_period, sizeof(pwm_period) / sizeof(int));
       appendf(&json_ptr, json_end, "}}]\n");
 
-      write_to_updates(json, json_ptr - json, true);
+      write_to_updates(json, json_ptr - json);
 
       memcpy(prev_pins, pins, sizeof(pins));
       memcpy(prev_mux, mux, sizeof(mux));
@@ -204,7 +203,7 @@ send_led_update() {
 
       appendf(&json_ptr, json_end, "}}]\n");
 
-      write_to_updates(json, json_ptr - json, true);
+      write_to_updates(json, json_ptr - json);
       memcpy(prev_leds, leds, sizeof(leds));
     }
   }
@@ -222,7 +221,7 @@ write_event_ack(const char* event_type, const char* ack_data_json) {
           "%s }}]\n",
           get_elapsed_micros(), event_type, ack_data_json ? ack_data_json : "{}");
 
-  write_to_updates(json, json_ptr - json, false);
+  write_to_updates(json, json_ptr - json);
 }
 
 // Process a button event
@@ -493,8 +492,8 @@ setup_output_pipe() {
   } else {
     updates_fd = open("___device_updates", O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
   }
-
 }
+
 
 // Run the Arduino code
 void
@@ -525,6 +524,8 @@ code_thread_main() {
   sigemptyset(&handle_sigint.sa_mask);
   handle_sigint.sa_flags = 0;
   sigaction(SIGINT, &handle_sigint, NULL);
+
+  // run the code
   run_code();
 }
 
@@ -616,13 +617,42 @@ main_thread() {
   if (notify_fd != -1) {
     close(notify_fd);
   }
-
   close(client_fd);
 }
 
+void show_help(char *s) {
+  std::cout << "Usage:   " << s << " [-option] " << std::endl;
+  std::cout << "option:  " << "-h  show help information" << std::endl;
+  std::cout << "         " << "-d  debug mode" << std::endl;
+  std::cout << "         " << "-f  fast mode" << std::endl;
+  std::cout << "         " << "-v  show version infomation" << std::endl;
+  exit(0);
+}
 
 int
 main(int argc, char** argv) {
+  // get command line options
+  char tmp;
+  bool debug = false;
+  while ((tmp = getopt(argc, argv, "hdfv")) != -1) {
+    switch (tmp) {
+    case 'h':
+      show_help(argv[0]);
+      break;
+    case 'd':
+      debug = true;
+      break;
+    case 'f':
+      _fast_mode = true;
+      break;
+    case 'v':
+      std::cout << "Arduino sim version is: 0.1" << std::endl;
+      break;
+    default:
+      show_help(argv[0]);
+      break;
+    }
+  }
 
   // ignore SIGINTs
   struct sigaction handle_sigint;
@@ -631,11 +661,16 @@ main(int argc, char** argv) {
   handle_sigint.sa_flags = 0;
   sigaction(SIGINT, &handle_sigint, NULL);
 
+  // setup 
   setup_output_pipe();
   set_esplora_state();
-  std::thread code_thread(code_thread_main);  // run the code
+
+  // run the code
+  std::thread code_thread(code_thread_main);  
   code_thread.detach();
-  main_thread();                    // start reading client data
+
+  // start the main thread to read data
+  main_thread();                    
   close(updates_fd);
   return EXIT_SUCCESS;
 }

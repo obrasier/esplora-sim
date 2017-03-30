@@ -4,7 +4,28 @@
 #include <iostream>
 
 _Device::_Device() {
+  _clock_start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
+  _clock_offset_us = 0;
+}
 
+void _Device::add_offset(uint32_t _us) {
+  _clock_offset_us += _us;
+}
+
+void _Device::increment_counter(uint32_t us) {
+  _m_micros.lock();
+  _micros_elapsed += us;
+  _m_micros.unlock();
+}
+
+uint64_t _Device::get_micros() {
+  sys_time<std::chrono::microseconds> clock_now = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
+  auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(clock_now - _clock_start);
+  uint64_t e = elapsed.count() + _clock_offset_us;
+  _m_micros.lock();
+  _micros_elapsed = e;
+  _m_micros.unlock();
+  return e;
 }
 
 void _Device::set_pin_value(int pin, int value) {
@@ -132,20 +153,6 @@ std::array<int, NUM_LEDS> _Device::get_all_leds() {
   _m_leds.unlock();
   return a;
 }
-
-void _Device::increment_counter(uint32_t us) {
-  _m_micros.lock();
-  _micros_elapsed += us;
-  _m_micros.unlock();
-}
-
-uint64_t _Device::get_micros() {
-  _m_micros.lock();
-  uint64_t m = _micros_elapsed;
-  _m_micros.unlock();
-  return m;
-}
-
 
 // check the suspend flag, if suspend is false, then continue
 // otherwise wait for the condition variable, cv_suspend
