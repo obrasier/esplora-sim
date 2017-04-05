@@ -177,6 +177,7 @@ void send_pin_update() {
   }
 }
 
+
 void
 send_led_update() {
   if (_send_updates) {
@@ -200,6 +201,7 @@ send_led_update() {
     }
   }
 }
+
 
 // Write ack to say we received the data.
 void
@@ -353,12 +355,6 @@ process_client_pins(const json_value* data) {
 }
 
 
-void
-process_client_random(const json_value* data) {
-  // TODO
-
-}
-
 // Handle an array of json events that we read from the pipe/file.
 // All json events are at a minimum:
 //   { "type": "<string>", "data": { <object> } }
@@ -414,9 +410,6 @@ process_client_json(const json_value* json) {
       } else if (strncmp(event_type->as.string, "slider", 13) == 0) {
         // Something driving the GPIO pins.
         process_client_slider(event_data);
-      } else if (strncmp(event_type->as.string, "random", 13) == 0) {
-        // Injected random data (from the marker only).
-        process_client_random(event_data);
       } else {
         fprintf(stderr, "Unknown event type: %s\n", event_type->as.string);
       }

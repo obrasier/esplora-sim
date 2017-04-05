@@ -8,15 +8,9 @@
 #include <thread>
 #include <algorithm>
 
-#define SIM_RED             5
-#define SIM_GREEN           9
-#define SIM_BLUE            10
-#define SIM_ACCEL_X         23
-#define SIM_ACCEL_Y         29
-#define SIM_ACCEL_Z         24
-#define SIM_BUZZER          6
 
-#define NUM_PINS            30
+
+#define NUM_PINS            31
 #define MUX_PINS            13
 #define NUM_LEDS            25
 #define NUM_ANALOG_PINS     12
@@ -32,7 +26,7 @@ void send_led_update();
 
 
 // The device class stores all the information required about a device.
-// It is designed to be thread-safe internally, so no external mutexs should
+// It is designed to be thread-safe internally, so no external mutexes should
 // be required.
 class _Device
 {
@@ -47,11 +41,11 @@ private:
 
   std::array<int, NUM_PINS> _pin_values;
   std::array<int, NUM_LEDS> _led_values;
+  std::array<int, NUM_PINS> _pin_modes;
   std::array<int, NUM_PINS> _digital_states;
   std::array<int, NUM_ANALOG_PINS> _analog_states;
-  std::array<int, NUM_PINS> _pin_modes;
-  std::array<int, NUM_PINS> _pwm_dutycycle;
-  std::array<int, NUM_PINS> _pwm_period;
+  std::array<int, NUM_ANALOG_PINS> _pwm_dutycycle;
+  std::array<int, NUM_ANALOG_PINS> _pwm_period;
   std::array<int, MUX_PINS> _mux;
   
   std::mutex _m_device;

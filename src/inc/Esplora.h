@@ -1,7 +1,6 @@
 #ifndef ESPLORA_H_ 
 #define ESPLORA_H_ 
 
-#include "esplora_pins.h"
 #include "Arduino.h"
 /*
  * The following constants can be used with the readButton()

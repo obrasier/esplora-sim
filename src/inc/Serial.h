@@ -39,6 +39,8 @@ private:
   uint32_t _baud_rate = 9600;
   const uint32_t _possible_bauds[12] = {300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 38400, 57600, 115200};
   void _ln_flush();
+  const int TX_LED = 30;
+  const int RX_LED = 17;
 
 };
 #endif

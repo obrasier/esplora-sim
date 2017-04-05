@@ -20,11 +20,12 @@
 #ifndef ARDUINO_H_
 #define ARDUINO_H_
 
-#include "binary.h"
-#include "wiring.h"
 #include <stdint.h>
 #include <thread>
 #include <chrono>
+#include "binary.h"
+#include "wiring.h"
+#include "pins_arduino.h"
 
 
 #define HIGH 0x1
@@ -38,6 +39,9 @@
 
 typedef uint8_t byte;
 typedef bool boolean;
+
+// WCharacter uses boolean
+#include "WCharacter.h"
 
 // Class to run code after n milliseconds, used for the tone duration timer
 // Arguments:
@@ -93,6 +97,10 @@ long random(long lowerLimit, long upperLimit);
 // int bit(int n);
 // void interrupts();
 // void noInterrupts();
+
+// in Main.cpp
+void send_pin_update();
+void send_led_update();
 
 // in Hardware.cpp
 void increment_counter(int us);

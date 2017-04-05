@@ -8,6 +8,7 @@
    * Contributions from Stuart Lowe, Ray-Yuan Sheu,
    * Rodrigo de Salvo Braz, Luc Gallant, John Maloney
    * and Brian Hunt
+   * http://www.strudel.org.uk/itoa/#newest
    */
 template <class T>
 std::string __toa(T value, int base) {
