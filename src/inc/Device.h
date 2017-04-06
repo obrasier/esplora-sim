@@ -37,8 +37,10 @@ private:
     using sys_time = std::chrono::time_point<std::chrono::system_clock, Duration>;
 
   sys_time<std::chrono::microseconds> _clock_start;
+  sys_time<std::chrono::microseconds> _suspend_start;
+  sys_time<std::chrono::microseconds> _suspend_end;
 
-  std::atomic<uint32_t> _clock_offset_us;
+  std::atomic<int64_t> _clock_offset_us;
   std::atomic<uint64_t> _micros_elapsed;
 
   std::array<int, NUM_PINS> _pin_values;
@@ -46,8 +48,8 @@ private:
   std::array<int, NUM_PINS> _pin_modes;
   std::array<int, NUM_PINS> _digital_states;
   std::array<int, NUM_ANALOG_PINS> _analog_states;
-  std::array<int, NUM_ANALOG_PINS> _pwm_dutycycle;
-  std::array<int, NUM_ANALOG_PINS> _pwm_period;
+  std::array<int, NUM_PINS> _pwm_dutycycle;
+  std::array<int, NUM_PINS> _pwm_period;
   std::array<int, MUX_PINS> _mux;
   
   std::mutex _m_device;
@@ -59,7 +61,7 @@ private:
 
 public:
   _Device();
-  void add_offset(uint32_t _us);
+  void add_offset(int64_t _us);
   void set_pin_value(int pin, int value);
   int get_pin_value(int pin);
   void set_mux_value(int pin, int value);
@@ -83,6 +85,8 @@ public:
   uint64_t get_micros();
   void tx_led_on();
   void tx_led_off();
+  void start_suspend();
+  void stop_suspend();
 };
 
 

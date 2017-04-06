@@ -5,16 +5,15 @@
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+  version 3 of the License, or (at your option) any later version.
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "Esplora.h"
@@ -45,8 +44,6 @@ const byte BUZZER_PIN = 6;
 const byte ACCEL_X_PIN = A5;
 const byte ACCEL_Y_PIN = A11;
 const byte ACCEL_Z_PIN = A6;
-
-const byte LED_PIN     = 13;
 
 //==========================================
 // Esplora
@@ -122,6 +119,8 @@ void _Esplora::writeRGB(byte red, byte green, byte blue) {
   writeBlue(blue);
 }
 
+// writeRed calls analogWrite to write to the correct pin
+// TODO: remove led update
 void _Esplora::writeRed(byte red) {
   if (red == lastRed) 
     return;
@@ -190,7 +189,9 @@ void _Esplora::tone(unsigned int freq, unsigned long duration) {
 }
 
 inline unsigned int readTinkerkitInput(byte whichInput) {
-  return _sim::_device.get_mux_value(whichInput + CH_TINKERKIT_A);
+  if (whichInput < 2)
+    return _sim::_device.get_mux_value(whichInput + CH_TINKERKIT_A);
+  return 0;
 }
 
 inline unsigned int readTinkerkitInputA() {

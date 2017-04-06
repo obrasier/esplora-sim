@@ -1,3 +1,20 @@
+/*
+  Device.cpp - Arduino simulator Esplora board library
+  Written by Owen Brasier
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 3 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "Device.h"
 #include "global_variables.h"
 
@@ -8,7 +25,7 @@ _Device::_Device() {
   _clock_offset_us = 0;
 }
 
-void _Device::add_offset(uint32_t us) {
+void _Device::add_offset(int64_t us) {
   _clock_offset_us += us;
 }
 
@@ -92,7 +109,7 @@ void _Device::set_pwm_dutycycle(int pin, uint32_t dutycycle) {
 
 uint32_t _Device::get_pwm_dutycycle(int pin) {
   _m_device.lock();
-  uint32_t duty = _pwm_dutycycle[pin]; 
+  uint32_t duty = _pwm_dutycycle[pin];
   _m_device.unlock();
   return duty;
 }
@@ -149,13 +166,32 @@ std::array<int, NUM_LEDS> _Device::get_all_leds() {
   return a;
 }
 
+
+void _Device::start_suspend() {
+  _suspend_start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
+}
+
+// subtract from the _clock_offset_us the duration of the code suspend in microseconds
+void _Device::stop_suspend() {
+  sys_time<std::chrono::microseconds> clock_now = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
+  auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(clock_now - _suspend_start);
+  _clock_offset_us -= elapsed.count();
+}
+
 namespace _sim {
 // check the suspend flag, if suspend is false, then continue
 // otherwise wait for the condition variable, cv_suspend
 void
 check_suspend() {
+  bool timing_suspend = false;
   std::unique_lock<std::mutex> lk(m_suspend);
+  if (suspend) {
+    timing_suspend = true;
+    _device.start_suspend();
+  }
   cv_suspend.wait(lk, [] {return suspend == false;});
+  if (timing_suspend)
+    _device.stop_suspend();
 }
 
 // If we receive a shutdown signla

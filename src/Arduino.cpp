@@ -8,6 +8,7 @@
 const int sleep_period = 100;
 const int us_sleep_period = sleep_period*1000;
 
+
 void pinMode(int pin, int mode) {
   if (pin > NUM_PINS || pin <= 0)
     return;
@@ -19,6 +20,8 @@ void digitalWrite(int pin, byte value) {
     return;
   _sim::_device.set_digital(pin, (value) ? HIGH : LOW);
   _sim::_device.set_pin_value(pin, value);
+  if (digitalPinHasPWM(pin))
+    _sim::_device.set_pwm_dutycycle(pin, 255);
   _sim::send_pin_update();
 }
 
@@ -97,6 +100,7 @@ void delay(uint32_t ms) {
     _sim::_device.add_offset(ms * 1000UL);
   }
   else {
+    // d is the division, number of sleep periods + r, remainder
     int d = ms/sleep_period;
     int r = ms % sleep_period;
     while(!_sim::fast_mode && d) {
@@ -120,6 +124,7 @@ void delayMicroseconds(uint32_t us) {
     _sim::_device.add_offset(us);
   }
   else {
+    // d is the division, number of sleep periods + r, remainder
     int d = us/us_sleep_period;
     int r = us % us_sleep_period;
     while(!_sim::fast_mode && d) {
@@ -139,7 +144,7 @@ void delayMicroseconds(uint32_t us) {
 int map(int x, int fromLow, int fromHigh, int toLow, int toHigh) {
   int y;
   y = (float)(x - fromLow) / (fromHigh - fromLow) * (toHigh - toLow) + toLow;
-  return (y);
+  return y;
 }
 
 

@@ -49,6 +49,7 @@
 #define arduino_int int
 #define int int16_t
 #include "sketch.ino"
+#undef int
 #define int arduino_int
 
 extern "C" {
@@ -63,6 +64,8 @@ _Serial Serial;
 _Esplora Esplora;
 
 
+// namespace _sim so the arduino code can't call 
+// all the functions the simulator uses easily
 namespace _sim {
 
 _Device _device;
@@ -85,9 +88,6 @@ int updates_fd = -1;
 
 // current loop number
 std::atomic<uint32_t> current_loop(0);
-
-
-
 
 // Elapsed time of the arduino in microseconds
 uint64_t
@@ -492,8 +492,7 @@ setup_output_pipe() {
 
 // Run the Arduino code
 void
-run_code()
-{
+run_code() {
   setup();
   // increment_counter(1032); // takes 1032 us for setup to run
   while (_sim::running) {
@@ -644,6 +643,7 @@ main(int argc, char** argv) {
       break;
     case 'v':
       std::cout << "Arduino sim version is: 0.1" << std::endl;
+      exit(0);
       break;
     default:
       show_help(argv[0]);
