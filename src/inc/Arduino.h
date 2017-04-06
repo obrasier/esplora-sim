@@ -48,6 +48,8 @@ typedef bool boolean;
 //    int - milliseconds until code is run
 //    bool - if true, spawns a new thread and continues executing code 
 //    variable arguments (what you feed into std::bind)
+
+namespace _sim {
 class _Later {
 public:
   template <class callable, class... arguments>
@@ -66,7 +68,7 @@ public:
     }
   }
 };
-
+} // namespace
 
 void pinMode(int pin, int mode);
 void digitalWrite(int pin, byte value);
@@ -99,8 +101,10 @@ long random(long lowerLimit, long upperLimit);
 // void noInterrupts();
 
 // in Main.cpp
+namespace _sim {
 void send_pin_update();
 void send_led_update();
+}
 
 // in Hardware.cpp
 void increment_counter(int us);

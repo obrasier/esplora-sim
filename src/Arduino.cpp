@@ -11,51 +11,51 @@ const int us_sleep_period = sleep_period*1000;
 void pinMode(int pin, int mode) {
   if (pin > NUM_PINS || pin <= 0)
     return;
-  _device.set_pin_mode(pin, mode);
+  _sim::_device.set_pin_mode(pin, mode);
 }
 
 void digitalWrite(int pin, byte value) {
   if (pin > NUM_PINS || pin <= 0)
     return;
-  _device.set_digital(pin, (value) ? HIGH : LOW);
-  _device.set_pin_value(pin, value);
-  send_pin_update();
+  _sim::_device.set_digital(pin, (value) ? HIGH : LOW);
+  _sim::_device.set_pin_value(pin, value);
+  _sim::send_pin_update();
 }
 
 int digitalRead(int pin) {
   if (pin > NUM_PINS || pin <= 0)
     return 0;
-  return _device.get_pin_value(pin);
+  return _sim::_device.get_pin_value(pin);
 }
 
 void analogWrite(int pin, byte value) {
   if (pin > NUM_PINS || pin <= 0)
     return;
   pinMode(pin, OUTPUT);
-  _device.set_pin_value(pin, value);
-  _device.set_pwm_dutycycle(pin, value);
-  send_pin_update();
+  _sim::_device.set_pin_value(pin, value);
+  _sim::_device.set_pwm_dutycycle(pin, value);
+  _sim::send_pin_update();
 }
 
 int analogRead(int pin) {
   if (pin > NUM_PINS || pin <= 0)
     return 0;
-  return _device.get_pin_value(pin);
+  return _sim::_device.get_pin_value(pin);
 }
 
 //------ Advanced I/O ----------------------
 void tone(unsigned int pin, unsigned int freq) {
   if (pin > NUM_PINS || pin <= 0)
     return;
-  _device.set_pin_value(pin, freq);
-  send_pin_update();
+  _sim::_device.set_pin_value(pin, freq);
+  _sim::send_pin_update();
 }
 
 void tone(unsigned int pin, unsigned int freq, unsigned long duration) {
   if (pin > NUM_PINS || pin <= 0)
     return;
   tone(pin, freq);
-  _Later turn_off_tone(duration, true, &noTone, pin);
+  _sim::_Later turn_off_tone(duration, true, &noTone, pin);
 }
 
 void noTone(unsigned int pin) {
@@ -75,7 +75,7 @@ int shiftIn(int dataPin, int clockPin, int bitOrder) {
 //------ Time ------------------------------
 
 unsigned long millis() {
-  unsigned long e = _device.get_micros();
+  unsigned long e = _sim::_device.get_micros();
   return e / 1000;
 }
 
@@ -83,7 +83,7 @@ unsigned long millis() {
 // to the nearest multiple of 4
 unsigned long
 micros() {
-  unsigned long e = _device.get_micros();
+  unsigned long e = _sim::_device.get_micros();
   int rem = e % 4;
   if (rem == 0)
     return e;
@@ -93,21 +93,22 @@ micros() {
 void delay(uint32_t ms) {
   if (ms == 0)
     return;
-  if (_fast_mode) {
-    _device.add_offset(ms * 1000UL);
+  if (_sim::fast_mode) {
+    _sim::_device.add_offset(ms * 1000UL);
   }
   else {
     int d = ms/sleep_period;
     int r = ms % sleep_period;
-    for (int i = 0; i < d; i++) {
+    while(!_sim::fast_mode && d) {
       std::this_thread::sleep_for(std::chrono::milliseconds(sleep_period));
-      check_suspend();
-      check_shutdown();
+      _sim::check_suspend();
+      _sim::check_shutdown();
+      d--;
     }
-    if (r) {
+    if (!_sim::fast_mode && r) {
       std::this_thread::sleep_for(std::chrono::milliseconds(r));
-      check_suspend();
-      check_shutdown();
+      _sim::check_suspend();
+      _sim::check_shutdown();
     }
   }
 }
@@ -115,21 +116,22 @@ void delay(uint32_t ms) {
 void delayMicroseconds(uint32_t us) {
   if (us == 0)
     return;
-  if (_fast_mode) {
-    _device.add_offset(us);
+  if (_sim::fast_mode) {
+    _sim::_device.add_offset(us);
   }
   else {
     int d = us/us_sleep_period;
     int r = us % us_sleep_period;
-    for (int i = 0; i < d; i++) {
+    while(!_sim::fast_mode && d) {
       std::this_thread::sleep_for(std::chrono::microseconds(us_sleep_period));
-      check_suspend();
-      check_shutdown();
+      _sim::check_suspend();
+      _sim::check_shutdown();
+      d--;
     }
-    if (r) {
+    if (!_sim::fast_mode && r) {
       std::this_thread::sleep_for(std::chrono::microseconds(r));
-      check_suspend();
-      check_shutdown();
+      _sim::check_suspend();
+      _sim::check_shutdown();
     }
   }
 }

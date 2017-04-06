@@ -56,33 +56,38 @@ extern "C" {
 #include "json.h"
 }
 
-
-std::mutex _m_suspend;
-std::condition_variable _cv_suspend;
-
-// tells the code thread to _shutdown, _suspend or operate in fast_mode
-std::atomic<bool> _shutdown(false);
-std::atomic<bool> _suspend(false);
-std::atomic<bool> _fast_mode(false);
-
-// send updates back to the browser
-std::atomic<bool> _send_updates(true);
-// run the student code
-std::atomic<bool> _running(true);
-
-// File descriptor to write ___device_updates.
-int updates_fd = -1;
-
 // allow serial
 _Serial Serial;
 
 // Esplora
 _Esplora Esplora;
 
+
+namespace _sim {
+
 _Device _device;
 
+std::mutex m_suspend;
+std::condition_variable cv_suspend;
+
+// tells the code thread to shutdown, suspend or operate in fast_mode
+std::atomic<bool> shutdown(false);
+std::atomic<bool> suspend(false);
+std::atomic<bool> fast_mode(false);
+
+// send updates back to the browser
+std::atomic<bool> send_updates(true);
+// run the student code
+std::atomic<bool> running(true);
+
+// File descriptor to write ___device_updates.
+int updates_fd = -1;
+
 // current loop number
-std::atomic<uint32_t> _current_loop(0);
+std::atomic<uint32_t> current_loop(0);
+
+
+
 
 // Elapsed time of the arduino in microseconds
 uint64_t
@@ -136,8 +141,9 @@ void print_arrays(std::array<int, NUM_PINS> pins, std::array<int, MUX_PINS> mux)
   std::cout << std::endl;
 }
 
+
 void send_pin_update() {
-  if (_send_updates) {
+  if (send_updates) {
     static int prev_pins[NUM_PINS] = {0};
     static int pins[NUM_PINS] = {0};
     static int prev_mux[MUX_PINS] = {0};
@@ -180,7 +186,7 @@ void send_pin_update() {
 
 void
 send_led_update() {
-  if (_send_updates) {
+  if (send_updates) {
     static int prev_leds[NUM_LEDS] = {0};
     static int leds[NUM_LEDS] = {0};
     std::array<int, NUM_LEDS> curr_leds = _device.get_all_leds();
@@ -377,12 +383,12 @@ process_client_json(const json_value* json) {
       fprintf(stderr, "Event missing type and/or data.\n");
     } else {
       if (strncmp(event_type->as.string, "resume", 6) == 0) {
-        std::unique_lock<std::mutex> lk(_m_suspend);
-        _suspend = false;
-        _cv_suspend.notify_all();
+        std::unique_lock<std::mutex> lk(m_suspend);
+        suspend = false;
+        cv_suspend.notify_all();
       } else if (strncmp(event_type->as.string, "suspend", 7) == 0) {
-        std::unique_lock<std::mutex> lk(_m_suspend);
-        _suspend = true;
+        std::unique_lock<std::mutex> lk(m_suspend);
+        suspend = true;
       } else if (strncmp(event_type->as.string, "microbit_button", 15) == 0) {
         // Button state change.
         process_client_button(event_data);
@@ -451,6 +457,7 @@ process_client_event(int fd) {
   write_event_ack("microbit_event", nullptr);
 }
 
+
 // Sets the default state of the Esplora pins
 // Everything is 0 except for the switches, which
 // are all active low.
@@ -481,6 +488,7 @@ setup_output_pipe() {
   }
 }
 
+} // namespace
 
 // Run the Arduino code
 void
@@ -488,11 +496,11 @@ run_code()
 {
   setup();
   // increment_counter(1032); // takes 1032 us for setup to run
-  while (_running) {
-    _current_loop++;
+  while (_sim::running) {
+    _sim::current_loop++;
     loop();
-    check_suspend();
-    check_shutdown();
+    _sim::check_suspend();
+    _sim::check_shutdown();
   }
 }
 
@@ -500,8 +508,8 @@ run_code()
 // has finished and final device update has been sent
 void
 sig_handler(int s) {
-  _shutdown = true;
-  _running = false;
+  _sim::shutdown = true;
+  _sim::running = false;
 }
 
 // Setup the signal handler then run the code
@@ -565,7 +573,7 @@ main_thread() {
   }
 
   int epoll_timeout = 50;
-  while (!_shutdown) {
+  while (!_sim::shutdown) {
     struct epoll_event events[MAX_EVENTS];
     int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, epoll_timeout);
 
@@ -573,7 +581,7 @@ main_thread() {
       if (errno == EINTR) {
         // Timeout or interrupted.
         // Allow the vm branch hook to proceed.
-        // Continue so that we'll catch the _shutdown flag above (if it's set, otherwise continue as
+        // Continue so that we'll catch the shutdown flag above (if it's set, otherwise continue as
         // normal).
         continue;
       }
@@ -594,12 +602,12 @@ main_thread() {
         for (uint8_t* p = buf; p < buf + len; p += sizeof(inotify_event) + event->len) {
           event = reinterpret_cast<inotify_event*>(p);
           if (event->wd == client_wd) {
-            process_client_event(client_fd);
+            _sim::process_client_event(client_fd);
           }
         }
       } else if (events[n].data.fd == client_fd) {
         // A write happened to the client events pipe.
-        process_client_event(client_fd);
+        _sim::process_client_event(client_fd);
       }
     }
   }
@@ -632,7 +640,7 @@ main(int argc, char** argv) {
       debug = true;
       break;
     case 'f':
-      _fast_mode = true;
+      _sim::fast_mode = true;
       break;
     case 'v':
       std::cout << "Arduino sim version is: 0.1" << std::endl;
@@ -651,8 +659,8 @@ main(int argc, char** argv) {
   sigaction(SIGINT, &handle_sigint, NULL);
 
   // setup
-  setup_output_pipe();
-  set_esplora_state();
+  _sim::setup_output_pipe();
+  _sim::set_esplora_state();
 
   // run the code
   std::thread code_thread(code_thread_main);
@@ -660,6 +668,6 @@ main(int argc, char** argv) {
 
   // start the main thread to read data
   main_thread();
-  close(updates_fd);
+  close(_sim::updates_fd);
   return EXIT_SUCCESS;
 }

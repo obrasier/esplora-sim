@@ -11,22 +11,26 @@
 #include <string>
 
 
+namespace _sim {
 // shutdown the simulator
-extern std::atomic<bool> _shutdown;
+extern std::atomic<bool> shutdown;
 
 // stop the arduino code running
-extern std::atomic<bool> _running;
+extern std::atomic<bool> running;
 
 // run the simulator in fast_mode
-extern std::atomic<bool> _fast_mode;
+extern std::atomic<bool> fast_mode;
 
 // send updates back to server or not
-extern std::atomic<bool> _send_updates;
+extern std::atomic<bool> send_updates;
 
 // suspend the arduino code
-extern std::atomic<bool> _suspend;
-extern std::mutex _m_suspend;
-extern std::condition_variable _cv_suspend;
+extern std::atomic<bool> suspend;
+extern std::mutex m_suspend;
+extern std::condition_variable cv_suspend;
+extern _Device _device;
+
+} 
 
 extern _Serial Serial;
 // extern _Serial Serial1;
@@ -34,6 +38,5 @@ extern _Serial Serial;
 extern _Esplora Esplora;
 
 // 
-extern _Device _device;
 
 #endif

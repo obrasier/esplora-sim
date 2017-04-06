@@ -11,6 +11,7 @@ void loop() {
     Esplora.writeRGB(0, 255, 0);
   else
     Esplora.writeRGB(0, 0, 0);
+  Esplora.tone(500, 2000);
   Serial.println("Delaying 1s");
   delay(1000);
 }

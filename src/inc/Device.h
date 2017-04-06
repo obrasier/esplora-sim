@@ -16,6 +16,7 @@
 #define NUM_ANALOG_PINS     12
 
 
+namespace _sim {
 void check_suspend();
 void check_shutdown();
 void increment_counter(int us);
@@ -23,6 +24,7 @@ void increment_counter(int us);
 // in Main.cpp
 void send_pin_update();
 void send_led_update();
+}
 
 
 // The device class stores all the information required about a device.

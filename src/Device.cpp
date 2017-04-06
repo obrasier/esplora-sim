@@ -149,12 +149,13 @@ std::array<int, NUM_LEDS> _Device::get_all_leds() {
   return a;
 }
 
+namespace _sim {
 // check the suspend flag, if suspend is false, then continue
 // otherwise wait for the condition variable, cv_suspend
 void
 check_suspend() {
-  std::unique_lock<std::mutex> lk(_m_suspend);
-  _cv_suspend.wait(lk, [] {return _suspend == false;});
+  std::unique_lock<std::mutex> lk(m_suspend);
+  cv_suspend.wait(lk, [] {return suspend == false;});
 }
 
 // If we receive a shutdown signla
@@ -163,12 +164,12 @@ check_suspend() {
 // without any delays
 void
 check_shutdown() {
-  if (_shutdown) {
-    _running = false;
-    _fast_mode = true;
+  if (shutdown) {
+    running = false;
+    fast_mode = true;
     send_pin_update();
     send_led_update();
-    _send_updates = false;
+    send_updates = false;
   }
 }
 
@@ -178,6 +179,7 @@ increment_counter(int us)
   _device.increment_counter(us);
   check_suspend();
   check_shutdown();
-  if (!_fast_mode)
+  if (!fast_mode)
     std::this_thread::sleep_for(std::chrono::microseconds(us));
 }
+} // namespace
