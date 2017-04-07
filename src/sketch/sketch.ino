@@ -1,3 +1,4 @@
+#include "type_change.h"
 #include <Esplora.h>
 void setup() {}
 int count = 0;
@@ -15,3 +16,4 @@ void loop() {
   Serial.println("Delaying 3s");
   delay(3000);
 }
+#include "type_normal.h"

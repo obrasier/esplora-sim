@@ -43,68 +43,68 @@ void _Serial::flush() {
 }
 
 void _Serial::print(int x) {
-  digitalWrite(TX_LED, HIGH);
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   std::cout << x;
-  digitalWrite(TX_LED, LOW);
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 void _Serial::print(float x) {
-  digitalWrite(TX_LED, HIGH);
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   std::cout << x;
-  digitalWrite(TX_LED, LOW);
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 void _Serial::print(std::string s) {
-  digitalWrite(TX_LED, HIGH);
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   const char *p;
   p = s.c_str();
   std::cout << p;
   fflush(stdout);
-  digitalWrite(TX_LED, LOW);
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 void _Serial::print(unsigned int x, int base) {
-  digitalWrite(TX_LED, HIGH);
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   char buf[2 + 8 * sizeof(unsigned int)];
   if (base == BIN || base == OCT || base == DEC || base == HEX) {
     utoa(x, buf, base);
     std::cout << buf;
     fflush(stdout);
   }
-  digitalWrite(TX_LED, LOW);
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 void _Serial::print(int x, int base) {
-  digitalWrite(TX_LED, HIGH);
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   char buf[2 + 8 * sizeof(int)];
   if (base == BIN || base == OCT || base == DEC || base == HEX) {
     itoa(x, buf, base);
     std::cout << buf;
     fflush(stdout);
   }
-  digitalWrite(TX_LED, LOW);
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 void _Serial::print(const String &s) {
-  digitalWrite(TX_LED, HIGH);
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   for (size_t i = 0; i < s.length(); i++) {
     putchar(s[i]);
   }
   fflush(stdout);
-  digitalWrite(TX_LED, LOW);
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 void _Serial::print(const char *p) {
-  digitalWrite(TX_LED, HIGH);
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   std::cout << p;
-  digitalWrite(TX_LED, LOW);
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 void _Serial::print(unsigned char uc) {
-  digitalWrite(TX_LED, HIGH);
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   std::cout << uc;
   fflush(stdout);
-  digitalWrite(TX_LED, LOW);
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 void _Serial::println() {

@@ -8,16 +8,19 @@ SRC=Arduino.cpp Device.cpp WString.cpp Serial.cpp ultoa.cpp Esplora.cpp Main.cpp
 OBJS= $(SRC:.cpp=.o)
 JSRC = json/buffer.c json/lexer.c json/logging.c json/json.c
 JOBJS= $(JSRC:.c=.o)
+SSRC= sketch/sketch.ino
+SOBJS= $(SSRC:.ino=.o)
 
 all: $(TARGET)
 
-$(TARGET): $(JOBJS) $(OBJS) $(SOBJS)
-	$(CXX) $(CPPFLAGS) $(INC) -o $(TARGET) $(JOBJS) $(OBJS) $(LIBS)
+$(TARGET): $(JOBJS) $(OBJS) 
+	$(CXX) $(CPPFLAGS) $(INC) -o $(TARGET) $(JOBJS) $(OBJS)  $(LIBS)
+	rm Main.o
 
 .c.o:
 	$(CC) $(INC) -c $< -o $@
 
-.cpp.o:
+.cpp.o: 
 	$(CXX) $(CPPFLAGS) $(INC) -c $< -o $@
 
 

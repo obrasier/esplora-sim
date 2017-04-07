@@ -64,7 +64,7 @@ _Serial Serial;
 _Esplora Esplora;
 
 
-// namespace _sim so the arduino code can't call 
+// namespace _sim so the arduino code can't call
 // all the functions the simulator uses easily
 namespace _sim {
 
@@ -632,22 +632,22 @@ main(int argc, char** argv) {
   bool debug = false;
   while ((tmp = getopt(argc, argv, "hdfv")) != -1) {
     switch (tmp) {
-    case 'h':
-      show_help(argv[0]);
-      break;
-    case 'd':
-      debug = true;
-      break;
-    case 'f':
-      _sim::fast_mode = true;
-      break;
-    case 'v':
-      std::cout << "Arduino sim version is: 0.1" << std::endl;
-      exit(0);
-      break;
-    default:
-      show_help(argv[0]);
-      break;
+      case 'h':
+        show_help(argv[0]);
+        break;
+      case 'd':
+        debug = true;
+        break;
+      case 'f':
+        _sim::fast_mode = true;
+        break;
+      case 'v':
+        std::cout << "Arduino sim version is: 0.1" << std::endl;
+        exit(0);
+        break;
+      default:
+        show_help(argv[0]);
+        break;
     }
   }
 

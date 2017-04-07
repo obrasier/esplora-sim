@@ -7,7 +7,8 @@
 #include <atomic>
 #include <thread>
 #include <algorithm>
-
+#include <tuple>
+#include <vector>
 
 
 #define NUM_PINS            31
@@ -51,12 +52,18 @@ private:
   std::array<int, NUM_PINS> _pwm_dutycycle;
   std::array<int, NUM_PINS> _pwm_period;
   std::array<int, MUX_PINS> _mux;
+
+  std::array<int, NUM_PINS> _countdown; 
   
   std::mutex _m_device;
   std::mutex _m_pins;
   std::mutex _m_modes;
   std::mutex _m_leds;
   std::mutex _m_mux;
+  std::mutex _m_pwmp;
+  std::mutex _m_pwmd;
+
+  
   const uint8_t _tx = 2;
 
 public:
@@ -87,6 +94,8 @@ public:
   void tx_led_off();
   void start_suspend();
   void stop_suspend();
+  void set_countdown(int pin, uint32_t d);
+  void check_countdown();
 };
 
 

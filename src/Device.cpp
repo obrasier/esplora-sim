@@ -41,129 +41,107 @@ uint64_t _Device::get_micros() {
 }
 
 void _Device::set_pin_value(int pin, int value) {
-  _m_pins.lock();
+  std::lock_guard<std::mutex> lk(_m_pins);
   _pin_values[pin] = value;
-  _m_pins.unlock();
 }
 
 int _Device::get_pin_value(int pin) {
-  _m_pins.lock();
-  int val =  _pin_values[pin];
-  _m_pins.unlock();
-  return val;
+  std::lock_guard<std::mutex> lk(_m_pins);
+  return  _pin_values[pin];
 }
 
 void _Device::set_mux_value(int pin, int value) {
-  _m_mux.lock();
+  std::lock_guard<std::mutex> lk(_m_mux);
   _mux[pin] = value;
-  _m_mux.unlock();
 }
 
 int _Device::get_mux_value(int pin) {
-  _m_mux.lock();
-  int m = _mux[pin];
-  _m_mux.unlock();
-  return m;
+  std::lock_guard<std::mutex> lk(_m_mux);
+  return _mux[pin];
 }
 
 std::array<int, NUM_PINS> _Device::get_all_pins() {
-  _m_pins.lock();
-  std::array<int, NUM_PINS> p = _pin_values;
-  _m_pins.unlock();
-  return p;
+  std::lock_guard<std::mutex> lk(_m_pins);
+  return _pin_values;
 }
 
 std::array<int, MUX_PINS> _Device::get_all_mux() {
-  _m_mux.lock();
-  std::array<int, MUX_PINS> m = _mux;
-  _m_mux.unlock();
-  return m;
+  std::lock_guard<std::mutex> lk(_m_mux);
+  return _mux;
 }
 
 
 void _Device::zero_all_pins() {
-  _m_pins.lock();
+  std::lock_guard<std::mutex> lk(_m_pins);
   std::fill(_pin_values.begin(), _pin_values.end(), 0);
-  _m_pins.unlock();
 }
 
 
 void _Device::set_pin_mode(int pin, int mode) {
-  _m_modes.lock();
+  std::lock_guard<std::mutex> lk(_m_modes);
   _pin_modes[pin] = mode;
-  _m_modes.unlock();
 }
 
 int _Device::get_pin_mode(int pin) {
-  _m_modes.lock();
-  int p = _pin_modes[pin];
-  _m_modes.unlock();
-  return p;
+  std::lock_guard<std::mutex> lk(_m_modes);
+  return _pin_modes[pin];
 }
 
 void _Device::set_pwm_dutycycle(int pin, uint32_t dutycycle) {
-  _m_device.lock();
+  std::lock_guard<std::mutex> lk(_m_pwmd);
   _pwm_dutycycle[pin] = dutycycle;
-  _m_device.unlock();
 }
 
 uint32_t _Device::get_pwm_dutycycle(int pin) {
-  _m_device.lock();
-  uint32_t duty = _pwm_dutycycle[pin];
-  _m_device.unlock();
-  return duty;
+  std::lock_guard<std::mutex> lk(_m_pwmd);
+  return _pwm_dutycycle[pin];
 }
 
 void _Device::set_pwm_period(int pin, uint8_t period) {
-  _m_device.lock();
+  std::lock_guard<std::mutex> lk(_m_pwmp);
   _pwm_period[pin] = period;
-  _m_device.unlock();
 }
 
 uint8_t _Device::get_pwm_period(int pin) {
-  _m_device.lock();
-  uint8_t period =  _pwm_period[pin];
-  _m_device.unlock();
-  return period;
+  std::lock_guard<std::mutex> lk(_m_pwmp);
+  return  _pwm_period[pin];
 }
 
 void _Device::set_digital(int pin, int level) {
-  _m_device.lock();
+  std::lock_guard<std::mutex> lk(_m_pins);
   _digital_states[pin] = level;
-  _m_device.unlock();
 }
 
 int _Device::get_digital(int pin) {
-  _m_device.lock();
-  int state =  _digital_states[pin];
-  _m_device.unlock();
-  return state;
+  std::lock_guard<std::mutex> lk(_m_pins);
+  return _digital_states[pin];
 }
 
 void _Device::set_analog(int pin, int value) {
-  _m_device.lock();
+  std::lock_guard<std::mutex> lk(_m_pins);
   _analog_states[pin] = value;
-  _m_device.unlock();
 }
 
 int _Device::get_analog(int pin) {
-  _m_device.lock();
-  int val =  _analog_states[pin];
-  _m_device.unlock();
-  return val;
+  std::lock_guard<std::mutex> lk(_m_pins);
+  return  _analog_states[pin];
 }
 
 void _Device::set_led(int led, uint8_t brightness) {
-  _m_leds.lock();
+  std::lock_guard<std::mutex> lk(_m_pins);
   _led_values[led] = brightness;
-  _m_leds.unlock();
 }
 
 std::array<int, NUM_LEDS> _Device::get_all_leds() {
-  _m_leds.lock();
-  std::array<int, NUM_LEDS> a = _led_values;
-  _m_leds.unlock();
-  return a;
+  std::lock_guard<std::mutex> lk(_m_leds);
+  return _led_values;
+}
+
+void _Device::set_countdown(int pin, uint32_t d) {
+}
+
+void _Device::check_countdown() {
+
 }
 
 
@@ -210,12 +188,10 @@ check_shutdown() {
 }
 
 void
-increment_counter(int us)
-{
+increment_counter(int us) {
   _device.increment_counter(us);
+  _device.check_countdown();
   check_suspend();
   check_shutdown();
-  if (!fast_mode)
-    std::this_thread::sleep_for(std::chrono::microseconds(us));
 }
 } // namespace
