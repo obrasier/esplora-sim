@@ -26,11 +26,10 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <stdlib.h>
+#include <math.h> // for round, coming Arduino 1.8.3
+#include <cmath>
 #include "binary.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define HIGH 0x1
 #define LOW  0x0
@@ -72,85 +71,67 @@ extern "C" {
 #undef abs
 #endif
 
-#ifdef __cplusplus
-}
-template <class T, class S>
-T min(T a, S b)
-{
+template <typename T, typename S>
+inline T min(T a, S b) {
   return ((a) < (b) ? (a) : (b));
 }
-template <class T, class S>
-T max(T a, S b)
-{
+template <typename T, typename S>
+inline T max(T a, S b) {
   return ((a) > (b) ? (a) : (b));
 }
-extern "C"
-{
-#else
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)>(b)?(a):(b))
-#endif
 
-#define abs(x) ((x)>0?(x):-(x))
-#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
-#define round(x)     ((x)>=0?(long)((x)+0.5):(long)((x)-0.5))
-#define radians(deg) ((deg)*DEG_TO_RAD)
-#define degrees(rad) ((rad)*RAD_TO_DEG)
-#define sq(x) ((x)*(x))
+template<typename T>
+inline T abs (T x) {
+  return (x > 0) ? x : -x;
+}
+
+template<typename T, typename S>
+inline T constrain(T amt, S low, S high) {
+  return (amt < low) ? low : (amt > high) ? high : amt;
+}
+
+// template<typename T>
+// inline T round(T x) {
+//   return std::round(x);
+// }
+
+template<typename T>
+inline T radians(T deg) {
+  return deg * DEG_TO_RAD;
+}
+
+template<typename T>
+inline T degrees(T rad) {
+  return rad * RAD_TO_DEG;
+}
+
+template<typename T>
+T sq(T x) {
+  return x * x;
+}
+
+
+typedef unsigned int word;
+
+
+void init(void);
+void done(void);
+
+void analogReference(uint8_t mode);
 
 #define interrupts() sei()
 #define noInterrupts() cli()
 
-#define clockCyclesPerMicrosecond() ( F_CPU / 1000000L )
-#define clockCyclesToMicroseconds(a) ( ((a) * 1000L) / (F_CPU / 1000L) )
-#define microsecondsToClockCycles(a) ( ((a) * (F_CPU / 1000L)) / 1000L )
+void attachInterrupt(uint8_t, void (*)(void), int mode);
+void detachInterrupt(uint8_t);
 
-#define lowByte(w) ((uint8_t) ((w) & 0xff))
-#define highByte(w) ((uint8_t) ((w) >> 8))
+void setup(void);
+void loop(void);
 
-#define bitRead(value, bit) (((value) >> (bit)) & 0x01)
-#define bitSet(value, bit) ((value) |= (1UL << (bit)))
-#define bitClear(value, bit) ((value) &= ~(1UL << (bit)))
-#define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
+int* empty(void);
 
+extern void fdevopen(int (*)(char, FILE*), int);
 
-  typedef unsigned int word;
-
-#define bit(b) (1UL << (b))
-
-  // typedef uint8_t boolean;
-  // typedef uint8_t byte;
-
-  void init(void);
-  void done(void);
-
-  // void pinMode(uint8_t, uint8_t);
-  // void pinSymbol(uint8_t, const char*);
-  // void digitalWrite(uint8_t, uint8_t);
-  // int digitalRead(uint8_t);
-  // int analogRead(uint8_t);
-  // void analogReference(uint8_t mode);
-  // void analogWrite(uint8_t, int);
-
-
-  // unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout);
-
-  // void shiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, uint8_t val);
-  // uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder);
-
-  // void attachInterrupt(uint8_t, void (*)(void), int mode);
-  // void detachInterrupt(uint8_t);
-
-  void setup(void);
-  void loop(void);
-
-  int* empty(void);
-
-  extern void fdevopen(int (*)(char, FILE*), int);
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
 
 #define SPDR (*empty())
 #define SPCR (*empty())

@@ -53,9 +53,9 @@ const byte Z_AXIS = 2;
 typedef uint8_t byte;
 
 
-extern void tone(unsigned int pin, unsigned int freq);
-extern void tone(unsigned int pin, unsigned int freq, unsigned long duration);
-extern void noTone(unsigned int pin);
+// extern void tone(unsigned int pin, unsigned int freq);
+// extern void tone(unsigned int pin, unsigned int freq, unsigned long duration);
+// extern void noTone(unsigned int pin);
 
 class _Esplora {
 private:
@@ -90,4 +90,5 @@ public:
   unsigned int readTinkerkitInputB();
 };
 
+extern _Esplora Esplora;
 #endif

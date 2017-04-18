@@ -20,10 +20,11 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
+#include <cstdio>
 #include <string.h>
 #include <math.h>
 #include "wiring.h"
+#include "Arduino.h"
 
 #include "Print.h"
 
@@ -33,20 +34,26 @@
 
 /* default implementation: may be overridden */
 void Print::write(const char *str) {
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   while (*str)
-    putchar(*str++);
+    std::putchar(*str++);
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 /* default implementation: may be overridden */
 void Print::write(const uint8_t *buffer, size_t size) {
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   while (size--)
-    putchar(*buffer++);
+    std::putchar(*buffer++);
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 void Print::print(const String &s) {
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   for (unsigned i = 0; i < s.length(); i++) {
-    putchar(s[i]);
+    std::putchar(s[i]);
   }
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 void Print::print(const char str[]) {
@@ -158,10 +165,12 @@ void Print::printNumber(unsigned long n, uint8_t base) {
     n /= base;
   }
 
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   for (; i > 0; i--)
     print((char) (buf[i - 1] < 10 ?
                   '0' + buf[i - 1] :
                   'A' + buf[i - 1] - 10));
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }
 
 void Print::printFloat(double number, uint8_t digits) {
@@ -188,10 +197,12 @@ void Print::printFloat(double number, uint8_t digits) {
     print(".");
 
   // Extract digits from the remainder one at a time
+  digitalWrite(LED_BUILTIN_TX, HIGH);
   while (digits-- > 0) {
     remainder *= 10.0;
     int toPrint = int(remainder);
     print(toPrint);
     remainder -= toPrint;
   }
+  digitalWrite(LED_BUILTIN_TX, LOW);
 }

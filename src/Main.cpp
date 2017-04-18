@@ -45,7 +45,7 @@
 
 
 // Need to come up with a better way to do overflow etc.
-// At the moment none exists, but I don't know a better way.... :/
+// // At the moment none exists, but I don't know a better way.... :/
 #define arduino_int int
 #define int int16_t
 #include "sketch.ino"
@@ -143,68 +143,75 @@ void print_arrays(std::array<int, NUM_PINS> pins, std::array<int, MUX_PINS> mux)
 
 
 void send_pin_update() {
-  if (send_updates) {
-    static int prev_pins[NUM_PINS] = {0};
-    static int pins[NUM_PINS] = {0};
-    static int prev_mux[MUX_PINS] = {0};
-    static int mux[MUX_PINS] = {0};
-    int pwm_dutycycle[NUM_PINS] = {0};
-    int pwm_period[NUM_PINS] = {0};
-    std::array<int, NUM_PINS> curr_pins = _device.get_all_pins();
-    std::array<int, MUX_PINS> curr_mux = _device.get_all_mux();
-    memcpy(pins, curr_pins.data(), sizeof(pins));
-    memcpy(mux, curr_mux.data(), sizeof(mux));
+  static int prev_pins[NUM_PINS] = {0};
+  static int pins[NUM_PINS] = {0};
+  static int prev_mux[MUX_PINS] = {0};
+  static int mux[MUX_PINS] = {0};
+  static int prev_pwm_dutycycle[NUM_PINS] = {0};
+  if (!send_updates) 
+    return;
+  int pwm_dutycycle[NUM_PINS] = {0};
+  int pwm_period[NUM_PINS] = {0};
+  std::array<PinState, NUM_PINS> curr_pins = _device.get_all_pins();
+  std::array<int, MUX_PINS> curr_mux = _device.get_all_mux();
+  for(int i = 0; i < NUM_PINS; i++) {
+    if (curr_pins[i] == GPIO_PIN_OUTPUT_PWM) 
+      pwm_dutycycle[i] = _device.get_pwm_dutycycle(i
+        );
+  }
+  memcpy(mux, curr_mux.data(), sizeof(mux));
 
-    if (memcmp(pins, prev_pins, sizeof(prev_pins)) != 0 || memcmp(mux, prev_mux, sizeof(prev_mux)) != 0) {
-      // pin states have changed
-      char json[1024];
-      char* json_ptr = json;
-      char* json_end = json + sizeof(json);
-      appendf(&json_ptr, json_end, "[{ \"type\": \"microbit_pins\", \"ticks\": %d, \"data\": {",
-              get_elapsed_micros());
+  if (memcmp(pins, prev_pins, sizeof(prev_pins)) != 0 || 
+    memcmp(mux, prev_mux, sizeof(prev_mux)) != 0 ||
+    memcmp(pwm_dutycycle, prev_pwm_dutycycle, sizeof(prev_pwm_dutycycle)) != 0 ) {
+    // pin states have changed
+    char json[1024];
+    char* json_ptr = json;
+    char* json_end = json + sizeof(json);
+    appendf(&json_ptr, json_end, "[{ \"type\": \"microbit_pins\", \"ticks\": %d, \"data\": {",
+            get_elapsed_micros());
 
-      list_to_json("p", &json_ptr, json_end, pins, sizeof(pins) / sizeof(int));
-      appendf(&json_ptr, json_end, ", ");
+    list_to_json("p", &json_ptr, json_end, pins, sizeof(pins) / sizeof(int));
+    appendf(&json_ptr, json_end, ", ");
 
-      list_to_json("mux", &json_ptr, json_end, mux, sizeof(mux) / sizeof(int));
-      appendf(&json_ptr, json_end, ", ");
+    list_to_json("mux", &json_ptr, json_end, mux, sizeof(mux) / sizeof(int));
+    appendf(&json_ptr, json_end, ", ");
 
-      list_to_json("pwmd", &json_ptr, json_end, pwm_dutycycle, sizeof(pwm_dutycycle) / sizeof(int));
-      appendf(&json_ptr, json_end, ", ");
+    list_to_json("pwmd", &json_ptr, json_end, pwm_dutycycle, sizeof(pwm_dutycycle) / sizeof(int));
+    appendf(&json_ptr, json_end, ", ");
 
-      list_to_json("pwmp", &json_ptr, json_end, pwm_period, sizeof(pwm_period) / sizeof(int));
-      appendf(&json_ptr, json_end, "}}]\n");
+    list_to_json("pwmp", &json_ptr, json_end, pwm_period, sizeof(pwm_period) / sizeof(int));
+    appendf(&json_ptr, json_end, "}}]\n");
 
-      write_to_updates(json, json_ptr - json);
+    write_to_updates(json, json_ptr - json);
 
-      memcpy(prev_pins, pins, sizeof(pins));
-      memcpy(prev_mux, mux, sizeof(mux));
-    }
+    memcpy(prev_pins, pins, sizeof(pins));
+    memcpy(prev_mux, mux, sizeof(mux));
   }
 }
 
 
 void
 send_led_update() {
-  if (send_updates) {
-    static int prev_leds[NUM_LEDS] = {0};
-    static int leds[NUM_LEDS] = {0};
-    std::array<int, NUM_LEDS> curr_leds = _device.get_all_leds();
-    memcpy(leds, curr_leds.data(), sizeof(leds));
-    if (memcmp(leds, prev_leds, sizeof(leds)) != 0) {
-      char json[1024];
-      char* json_ptr = json;
-      char* json_end = json + sizeof(json);
-      appendf(&json_ptr, json_end, "[{ \"type\": \"microbit_leds\", \"ticks\": %d, \"data\": {",
-              get_elapsed_micros());
+  static int prev_leds[NUM_LEDS] = {0};
+  static int leds[NUM_LEDS] = {0};
+  if (!send_updates)
+    return;
+  std::array<int, NUM_LEDS> curr_leds = _device.get_all_leds();
+  memcpy(leds, curr_leds.data(), sizeof(leds));
+  if (memcmp(leds, prev_leds, sizeof(leds)) != 0) {
+    char json[1024];
+    char* json_ptr = json;
+    char* json_end = json + sizeof(json);
+    appendf(&json_ptr, json_end, "[{ \"type\": \"microbit_leds\", \"ticks\": %d, \"data\": {",
+            get_elapsed_micros());
 
-      list_to_json("b", &json_ptr, json_end, leds, sizeof(leds) / sizeof(int));
+    list_to_json("b", &json_ptr, json_end, leds, sizeof(leds) / sizeof(int));
 
-      appendf(&json_ptr, json_end, "}}]\n");
+    appendf(&json_ptr, json_end, "}}]\n");
 
-      write_to_updates(json, json_ptr - json);
-      memcpy(prev_leds, leds, sizeof(leds));
-    }
+    write_to_updates(json, json_ptr - json);
+    memcpy(prev_leds, leds, sizeof(leds));
   }
 }
 
@@ -506,7 +513,7 @@ run_code() {
 // Handle SIGINT in the code thread to shutdown after a loop
 // has finished and final device update has been sent
 void
-sig_handler(int s) {
+sig_handler(int s __attribute__((unused))) {
   _sim::shutdown = true;
   _sim::running = false;
 }

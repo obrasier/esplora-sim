@@ -23,6 +23,7 @@
 _Device::_Device() {
   _clock_start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
   _clock_offset_us = 0;
+  _micros_elapsed = 0;
 }
 
 void _Device::add_offset(int64_t us) {
@@ -31,12 +32,24 @@ void _Device::add_offset(int64_t us) {
 
 void _Device::increment_counter(uint32_t us) {
   _micros_elapsed += us;
+  std::lock_guard<std::mutex> lk(_m_countdown);
+  for (int i = 0; i < NUM_PINS; i++) {
+    if (_countdown[i] > 0) {
+      _countdown[i] -= us;
+      if (_countdown[i] <= 0) {
+        _countdown[i] = 0;
+        // timer has expired on pin i
+        set_pin_value(_countdown[i], 0);
+      }
+    }
+  }
+
 }
 
 uint64_t _Device::get_micros() {
-  sys_time<std::chrono::microseconds> clock_now = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
-  auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(clock_now - _clock_start);
-  _micros_elapsed = elapsed.count() + _clock_offset_us;
+  // sys_time<std::chrono::microseconds> clock_now = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
+  // auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(clock_now - _clock_start);
+  // _micros_elapsed = elapsed.count() + _clock_offset_us;
   return _micros_elapsed;
 }
 
@@ -60,9 +73,9 @@ int _Device::get_mux_value(int pin) {
   return _mux[pin];
 }
 
-std::array<int, NUM_PINS> _Device::get_all_pins() {
+std::array<PinState, NUM_PINS> _Device::get_all_pins() {
   std::lock_guard<std::mutex> lk(_m_pins);
-  return _pin_values;
+  return _pin_states;
 }
 
 std::array<int, MUX_PINS> _Device::get_all_mux() {
@@ -79,6 +92,19 @@ void _Device::zero_all_pins() {
 
 void _Device::set_pin_mode(int pin, int mode) {
   std::lock_guard<std::mutex> lk(_m_modes);
+  switch (mode) {
+    case INPUT:
+      set_pin_state(pin, GPIO_PIN_INPUT_FLOATING);
+      break;
+    case INPUT_PULLUP:
+      set_pin_state(pin, GPIO_PIN_INPUT_UP_HIGH);
+      break;
+    case OUTPUT:
+      set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
+      break;
+    default:
+      return;
+  }
   _pin_modes[pin] = mode;
 }
 
@@ -87,9 +113,20 @@ int _Device::get_pin_mode(int pin) {
   return _pin_modes[pin];
 }
 
+void _Device::set_pin_state(int pin, PinState state) {
+  std::lock_guard<std::mutex> lk(_m_states);
+  _pin_states[pin] = state;
+}
+
+PinState _Device::get_pin_state(int pin) {
+  std::lock_guard<std::mutex> lk(_m_states);
+  return _pin_states[pin];
+}
+
 void _Device::set_pwm_dutycycle(int pin, uint32_t dutycycle) {
   std::lock_guard<std::mutex> lk(_m_pwmd);
   _pwm_dutycycle[pin] = dutycycle;
+  set_pin_state(pin, GPIO_PIN_OUTPUT_PWM);
 }
 
 uint32_t _Device::get_pwm_dutycycle(int pin) {
@@ -109,22 +146,37 @@ uint8_t _Device::get_pwm_period(int pin) {
 
 void _Device::set_digital(int pin, int level) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  _digital_states[pin] = level;
+  _digital_values[pin] = level;
+  if (level == LOW)
+    set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
+  else if (level == HIGH)
+    set_pin_state(pin, GPIO_PIN_OUTPUT_HIGH);
 }
 
 int _Device::get_digital(int pin) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  return _digital_states[pin];
+  return _digital_values[pin];
 }
 
 void _Device::set_analog(int pin, int value) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  _analog_states[pin] = value;
+  if (pin >= 18)
+    pin -= 18;
+  if (isAnalogPin(pin))
+    _analog_values[pin] = value;
 }
 
 int _Device::get_analog(int pin) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  return  _analog_states[pin];
+  if (pin >= 18)
+    pin -= 18;
+  if (isAnalogPin(pin))
+    return _analog_values[pin];
+  return 0;
+}
+
+void _Device::set_tone(int pin, int value) {
+  set_pin_value(pin, value);
 }
 
 void _Device::set_led(int led, uint8_t brightness) {
@@ -138,38 +190,48 @@ std::array<int, NUM_LEDS> _Device::get_all_leds() {
 }
 
 void _Device::set_countdown(int pin, uint32_t d) {
+  std::lock_guard<std::mutex> lk(_m_countdown);
+  _countdown[pin] = d;
 }
 
-void _Device::check_countdown() {
-
+void _Device::set_pullup_digwrite(int pin, int value) {
+  PinState mode = get_pin_state(pin);
+  if (value == HIGH) {
+    // enable pullup
+    if (mode >= GPIO_PIN_INPUT_FLOATING && mode <= GPIO_PIN_INPUT_FLOATING_HIGH) {
+      set_pin_state(pin, GPIO_PIN_INPUT_UP_HIGH);
+    }
+  } else if (value == LOW) {
+    if (mode >= GPIO_PIN_INPUT_UP_LOW && mode <= GPIO_PIN_INPUT_DOWN_HIGH)
+      set_pin_state(pin, GPIO_PIN_INPUT_FLOATING);
+  }
 }
 
-
-void _Device::start_suspend() {
-  _suspend_start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
+bool _Device::digitalPinHasPWM(int p) {
+  return ((p) == 3 || (p) == 5 || (p) == 6 || (p) == 9 || (p) == 10 || (p) == 11 || (p) == 13);
 }
 
-// subtract from the _clock_offset_us the duration of the code suspend in microseconds
-void _Device::stop_suspend() {
-  sys_time<std::chrono::microseconds> clock_now = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
-  auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(clock_now - _suspend_start);
-  _clock_offset_us -= elapsed.count();
+bool _Device::isAnalogPin(int p) {
+  return ((p) >= 0 && (p) <= 11);
 }
+// void _Device::start_suspend() {
+//   _suspend_start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
+// }
+
+// // subtract from the _clock_offset_us the duration of the code suspend in microseconds
+// void _Device::stop_suspend() {
+//   sys_time<std::chrono::microseconds> clock_now = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
+//   auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(clock_now - _suspend_start);
+//   _clock_offset_us -= elapsed.count();
+// }
 
 namespace _sim {
 // check the suspend flag, if suspend is false, then continue
 // otherwise wait for the condition variable, cv_suspend
 void
 check_suspend() {
-  bool timing_suspend = false;
   std::unique_lock<std::mutex> lk(m_suspend);
-  if (suspend) {
-    timing_suspend = true;
-    _device.start_suspend();
-  }
   cv_suspend.wait(lk, [] {return suspend == false;});
-  if (timing_suspend)
-    _device.stop_suspend();
 }
 
 // If we receive a shutdown signla
@@ -190,8 +252,9 @@ check_shutdown() {
 void
 increment_counter(int us) {
   _device.increment_counter(us);
-  _device.check_countdown();
   check_suspend();
   check_shutdown();
+  send_pin_update();
+  send_led_update();
 }
 } // namespace
