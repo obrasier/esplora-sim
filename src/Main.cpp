@@ -68,6 +68,7 @@ _Esplora Esplora;
 // all the functions the simulator uses easily
 namespace _sim {
 
+
 _Device _device;
 
 std::mutex m_suspend;
@@ -148,22 +149,21 @@ void send_pin_update() {
   static int prev_mux[MUX_PINS] = {0};
   static int mux[MUX_PINS] = {0};
   static int prev_pwm_dutycycle[NUM_PINS] = {0};
-  if (!send_updates) 
+  if (!send_updates)
     return;
   int pwm_dutycycle[NUM_PINS] = {0};
   int pwm_period[NUM_PINS] = {0};
   std::array<PinState, NUM_PINS> curr_pins = _device.get_all_pins();
   std::array<int, MUX_PINS> curr_mux = _device.get_all_mux();
-  for(int i = 0; i < NUM_PINS; i++) {
-    if (curr_pins[i] == GPIO_PIN_OUTPUT_PWM) 
-      pwm_dutycycle[i] = _device.get_pwm_dutycycle(i
-        );
+  for (int i = 0; i < NUM_PINS; i++) {
+    if (curr_pins[i] == GPIO_PIN_OUTPUT_PWM)
+      pwm_dutycycle[i] = _device.get_pwm_dutycycle(i);
   }
   memcpy(mux, curr_mux.data(), sizeof(mux));
 
-  if (memcmp(pins, prev_pins, sizeof(prev_pins)) != 0 || 
-    memcmp(mux, prev_mux, sizeof(prev_mux)) != 0 ||
-    memcmp(pwm_dutycycle, prev_pwm_dutycycle, sizeof(prev_pwm_dutycycle)) != 0 ) {
+  if (memcmp(pins, prev_pins, sizeof(prev_pins)) != 0 ||
+      memcmp(mux, prev_mux, sizeof(prev_mux)) != 0 ||
+      memcmp(pwm_dutycycle, prev_pwm_dutycycle, sizeof(prev_pwm_dutycycle)) != 0 ) {
     // pin states have changed
     char json[1024];
     char* json_ptr = json;
@@ -190,6 +190,12 @@ void send_pin_update() {
   }
 }
 
+void print_led_array() {
+  std::array<int, NUM_LEDS> curr_leds = _device.get_all_leds();
+  for (auto i : curr_leds)
+    std::cout << i << ' ';
+  std::cout << std::endl;
+}
 
 void
 send_led_update() {
@@ -200,6 +206,7 @@ send_led_update() {
   std::array<int, NUM_LEDS> curr_leds = _device.get_all_leds();
   memcpy(leds, curr_leds.data(), sizeof(leds));
   if (memcmp(leds, prev_leds, sizeof(leds)) != 0) {
+    print_led_array();
     char json[1024];
     char* json_ptr = json;
     char* json_end = json + sizeof(json);
@@ -465,23 +472,7 @@ process_client_event(int fd) {
 }
 
 
-// Sets the default state of the Esplora pins
-// Everything is 0 except for the switches, which
-// are all active low.
-// TODO: set default state of slider, possibly sending
-// a slider event on startup based on it's position.
-void
-set_esplora_state() {
-  // double braces stops clang++ warning bug
-  std::array<int, 4> switches {{ CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4 }};
-  _device.zero_all_pins();
-  _device.set_led(0, 255);
-  // set switches to be high (active low)
-  for (const auto &elem : switches)
-    _device.set_mux_value(elem, HIGH);
-  _device.set_mux_value(CH_JOYSTICK_SW, 1023);
-  send_pin_update();
-}
+
 
 // Setup the output pipe
 void
@@ -507,6 +498,8 @@ run_code() {
     loop();
     _sim::check_suspend();
     _sim::check_shutdown();
+    if (_sim::current_loop % 100000 == 0)
+      std::cout << _sim::current_loop << std::endl;
   }
 }
 
@@ -667,7 +660,6 @@ main(int argc, char** argv) {
 
   // setup
   _sim::setup_output_pipe();
-  _sim::set_esplora_state();
 
   // run the code
   std::thread code_thread(code_thread_main);

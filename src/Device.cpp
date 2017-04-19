@@ -20,10 +20,19 @@
 
 #include <iostream>
 
+
 _Device::_Device() {
   _clock_start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
   _clock_offset_us = 0;
   _micros_elapsed = 0;
+  std::array<int, 4> switches {{ CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4 }};
+  zero_all_pins();
+  set_led(0, MAX_LED);
+  // set switches to be high (active low)
+  for (const auto &elem : switches)
+    set_mux_value(elem, HIGH);
+  set_mux_value(CH_JOYSTICK_SW, 1023);
+  _sim::increment_counter(0);
 }
 
 void _Device::add_offset(int64_t us) {
@@ -43,7 +52,6 @@ void _Device::increment_counter(uint32_t us) {
       }
     }
   }
-
 }
 
 uint64_t _Device::get_micros() {
@@ -146,6 +154,11 @@ uint8_t _Device::get_pwm_period(int pin) {
 
 void _Device::set_digital(int pin, int level) {
   std::lock_guard<std::mutex> lk(_m_pins);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (pin == _led_map[i]) {
+      set_led(i, (level == HIGH) ? MAX_LED : 0);
+    }
+  }
   _digital_values[pin] = level;
   if (level == LOW)
     set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
@@ -160,7 +173,14 @@ int _Device::get_digital(int pin) {
 
 void _Device::set_analog(int pin, int value) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  if (pin >= 18)
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (pin == _led_map[i]) {
+      int v = map(value, 0, 255, 0, MAX_LED);
+      set_led(i, v);
+      break;
+    }
+  }
+  if (pin >= 18) // work for pin numbers as well as channel numbers
     pin -= 18;
   if (isAnalogPin(pin))
     _analog_values[pin] = value;
@@ -180,7 +200,7 @@ void _Device::set_tone(int pin, int value) {
 }
 
 void _Device::set_led(int led, uint8_t brightness) {
-  std::lock_guard<std::mutex> lk(_m_pins);
+  std::lock_guard<std::mutex> lk(_m_leds);
   _led_values[led] = brightness;
 }
 

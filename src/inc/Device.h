@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <tuple>
 #include <vector>
-
+#include "pins_arduino.h"
 
 #define NUM_PINS            31
 #define MUX_PINS            13
@@ -82,8 +82,10 @@ class _Device {
   std::mutex _m_countdown;
 
   const uint8_t _tx = 2;
-
-
+  const int MAX_LED = 255;
+  std::array<int, NUM_LEDS> _led_map = {{
+      0, LED_BUILTIN, LED_BUILTIN_TX,
+      LED_BUILTIN_RX, 5, 10, 9 } };
 
  public:
   _Device();

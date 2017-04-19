@@ -19,14 +19,16 @@ void pinMode(int pin, int mode) {
 }
 
 void digitalWrite(int pin, byte value) {
+  std::cout << "called digitalWrite" << std::endl;
   if (pin > NUM_PINS || pin <= 0)
     return;
-  PinState state = _sim::_device.get_pin_state(pin);
-  if (state == INPUT) {
-    // if state is input on digital write, we enable (high) or disable (low)
+  int mode = _sim::_device.get_pin_mode(pin);
+  std::cout << "pin mode: " << pin << " is " << mode << std::endl;
+  if (mode == INPUT) {
+    // if mode is input on digital write, we enable (high) or disable (low)
     // the pullup resistor
     _sim::_device.set_pullup_digwrite(pin, value);
-  } else if (state == OUTPUT) {
+  } else if (mode == OUTPUT) {
     _sim::_device.set_digital(pin, (value) ? HIGH : LOW);
     _sim::increment_counter(1);
   }
@@ -40,6 +42,7 @@ int digitalRead(int pin) {
 }
 
 void analogWrite(int pin, byte value) {
+  std::cout << "called analogWrite" << std::endl;
   if (!_sim::_device.isAnalogPin(pin))
     return;
   pinMode(pin, OUTPUT);
@@ -54,9 +57,9 @@ void analogWrite(int pin, byte value) {
 }
 
 int analogRead(int pin) {
-  if (pin > NUM_PINS || pin <= 0)
+  if (!_sim::_device.isAnalogPin(pin))
     return 0;
-  _sim::_device.increment_counter(1);
+  _sim::increment_counter(1);
   return _sim::_device.get_analog(pin);
 }
 

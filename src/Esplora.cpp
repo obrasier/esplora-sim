@@ -73,29 +73,28 @@ int _Esplora::readTemperature(byte scale) {
 }
 
 int _Esplora::readMicrophone() {
-  _sim::_device.increment_counter(1);
+  _sim::increment_counter(1);
   return _sim::_device.get_mux_value(CH_MIC);
 }
 
 int _Esplora::readJoystickSwitch() {
-  _sim::_device.increment_counter(1);
+  _sim::increment_counter(1);
   return _sim::_device.get_mux_value(CH_JOYSTICK_SW);
 }
 
 int _Esplora::readJoystickButton() {
-  _sim::_device.increment_counter(1);
+  _sim::increment_counter(1);
   return (_sim::_device.get_mux_value(CH_JOYSTICK_SW) == 1023) ? HIGH : LOW;
 }
 
 int _Esplora::readAccelerometer(byte axis) {
-  _sim::_device.increment_counter(1);
-  int val;
+  _sim::increment_counter(1);
   switch (axis) {
-    case X_AXIS: val =  _sim::_device.get_pin_value(ACCEL_X_PIN); break;
-    case Y_AXIS: val =  _sim::_device.get_pin_value(ACCEL_Y_PIN); break;
-    case Z_AXIS: val =  _sim::_device.get_pin_value(ACCEL_Z_PIN); break;
+    case X_AXIS: return _sim::_device.get_pin_value(ACCEL_X_PIN); 
+    case Y_AXIS: return _sim::_device.get_pin_value(ACCEL_Y_PIN);
+    case Z_AXIS: return _sim::_device.get_pin_value(ACCEL_Z_PIN);
+    default: return 0;
   }
-  return val;
 }
 
 int _Esplora::readButton(byte button) {
@@ -104,22 +103,22 @@ int _Esplora::readButton(byte button) {
   } else {
     return HIGH;
   }
-  _sim::_device.increment_counter(1);
+  _sim::increment_counter(1);
   return (_sim::_device.get_mux_value(button) > 0) ? HIGH : LOW;
 }
 
 int _Esplora::readJoystickX() {
-  _sim::_device.increment_counter(1);
+  _sim::increment_counter(1);
   return _sim::_device.get_mux_value(CH_JOYSTICK_X);
 }
 
 int _Esplora::readJoystickY() {
-  _sim::_device.increment_counter(1);
+  _sim::increment_counter(1);
   return _sim::_device.get_mux_value(CH_JOYSTICK_Y);
 }
 
 void _Esplora::writeRGB(byte red, byte green, byte blue) {
-  _sim::_device.increment_counter(1);
+  _sim::increment_counter(1);
   writeRed(red);
   writeGreen(green);
   writeBlue(blue);
@@ -130,36 +129,25 @@ void _Esplora::writeRGB(byte red, byte green, byte blue) {
 void _Esplora::writeRed(byte red) {
   if (red == lastRed)
     return;
-  _sim::_device.increment_counter(1);
-  analogWrite(RED_PIN, red);
   lastRed = red;
-  _sim::send_pin_update();
-  int bright = map(red, 0, 255, 0, 9);
-  _sim::_device.set_led(0, bright);
-  _sim::send_led_update();
+  analogWrite(RED_PIN, red);
+  _sim::increment_counter(1);
 }
 
 void _Esplora::writeGreen(byte green) {
   if (green == lastGreen)
     return;
-  _sim::_device.increment_counter(1);
-  analogWrite(GREEN_PIN, green);
   lastGreen = green;
-  _sim::send_pin_update();
-  int bright = map(green, 0, 255, 0, 9);
-  _sim::_device.set_led(1, bright);
-  _sim::send_led_update();
+  analogWrite(GREEN_PIN, green);
+  _sim::increment_counter(1);
 }
 
 void _Esplora::writeBlue(byte blue) {
   if (blue == lastBlue)
     return;
-  _sim::_device.increment_counter(1);
-  analogWrite(BLUE_PIN, blue);
   lastBlue = blue;
-  int bright = map(blue, 0, 255, 0, 9);
-  _sim::_device.set_led(2, bright);
-  _sim::send_led_update();
+  analogWrite(BLUE_PIN, blue);
+  _sim::increment_counter(1);
 }
 
 byte _Esplora::readRed() {
@@ -197,18 +185,18 @@ void _Esplora::tone(unsigned int freq, unsigned long duration) {
 
 inline unsigned int readTinkerkitInput(byte whichInput) {
   if (whichInput < 2) {
-    _sim::_device.increment_counter(1);
+    _sim::increment_counter(1);
     return _sim::_device.get_mux_value(whichInput + CH_TINKERKIT_A);
   }
   return 0;
 }
 
 inline unsigned int readTinkerkitInputA() {
-  _sim::_device.increment_counter(1);
+  _sim::increment_counter(1);
   return _sim::_device.get_mux_value(CH_TINKERKIT_A);
 }
 
 inline unsigned int readTinkerkitInputB() {
-  _sim::_device.increment_counter(1);
+  _sim::increment_counter(1);
   return _sim::_device.get_mux_value(CH_TINKERKIT_B);
 }
