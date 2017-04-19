@@ -30,7 +30,7 @@
 *.swp
 
 # Executable
-esplora_sim
+*esplora_sim
 
 # Event files
 ___client_events

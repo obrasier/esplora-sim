@@ -1,6 +1,6 @@
 CC=clang
 CXX = clang++
-CXX_FLAGS = -Wfatal-errors -Wall -Wextra -Wpedantic -Wshadow -fsanitize=address -std=c++11 -W -Wall -pedantic -Wno-reserved-id-macro -Wno-keyword-macro
+CXX_FLAGS = -fsanitize=address -std=c++11 -Wfatal-errors -Wall -Wextra -Wpedantic -Wshadow -W -pedantic -Wno-reserved-id-macro -Wno-keyword-macro
 INC=-I./src/inc/json -I./src/inc -I./src/json -I./src/sketch -I./src
 
 # Final binary
@@ -49,6 +49,6 @@ $(BUILD_DIR)/%.o : %.c
 .PHONY : clean
 clean :
 	# This should remove all generated files.
-	-rm $(BUILD_DIR)/$(BIN) $(OBJ) $(DEP)
+	-rm $(BUILD_DIR)/$(BIN) $(OBJ) $(JOBJ) $(DEP)
 	touch ___client_events ___device_updates
 	rm ___device_updates ___client_events
