@@ -492,14 +492,12 @@ setup_output_pipe() {
 void
 run_code() {
   setup();
-  // increment_counter(1032); // takes 1032 us for setup to run
+  _sim::increment_counter(1032); // takes 1032 us for setup to run
   while (_sim::running) {
     _sim::current_loop++;
     loop();
     _sim::check_suspend();
     _sim::check_shutdown();
-    if (_sim::current_loop % 100000 == 0)
-      std::cout << _sim::current_loop << std::endl;
   }
 }
 

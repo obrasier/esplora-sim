@@ -133,6 +133,13 @@ PinState _Device::get_pin_state(int pin) {
 
 void _Device::set_pwm_dutycycle(int pin, uint32_t dutycycle) {
   std::lock_guard<std::mutex> lk(_m_pwmd);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (pin == _led_map[i]) {
+      int v = map(dutycycle, 0, 255, 0, MAX_LED);
+      set_led(i, v);
+      break;
+    }
+  }
   _pwm_dutycycle[pin] = dutycycle;
   set_pin_state(pin, GPIO_PIN_OUTPUT_PWM);
 }
@@ -173,13 +180,6 @@ int _Device::get_digital(int pin) {
 
 void _Device::set_analog(int pin, int value) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  for (int i = 0; i < NUM_LEDS; i++) {
-    if (pin == _led_map[i]) {
-      int v = map(value, 0, 255, 0, MAX_LED);
-      set_led(i, v);
-      break;
-    }
-  }
   if (pin >= 18) // work for pin numbers as well as channel numbers
     pin -= 18;
   if (isAnalogPin(pin))

@@ -18,7 +18,6 @@ sketch/sketch.o:
 
 $(TARGET): $(JOBJS) $(OBJS) 
 	$(CXX) $(CPPFLAGS) $(INC) -o $(TARGET) $(JOBJS) $(OBJS) $(LIBS)
-	rm Main.o
 
 .c.o:
 	$(CC) $(INC) -c $< -o $@
@@ -29,7 +28,7 @@ $(TARGET): $(JOBJS) $(OBJS)
 
 
 clean:
-	rm *.o $(TARGET) 
+	rm $(JOBJS) $(OBJS)
 	touch ___client_events ___device_updates
 	rm ___device_updates ___client_events
 
