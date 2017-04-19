@@ -44,13 +44,6 @@
 #include "global_variables.h"
 
 
-// Need to come up with a better way to do overflow etc.
-// // At the moment none exists, but I don't know a better way.... :/
-// #define arduino_int int
-// #define int int16_t
-// #include "sketch.ino"
-// #undef int
-// #define int arduino_int
 
 extern "C" {
 #include "buffer.h"

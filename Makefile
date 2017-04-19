@@ -9,7 +9,7 @@ BIN = esplora_sim
 BUILD_DIR = ./build
 
 # List of all .cpp source files.
-SRC = $(wildcard src/*.cpp) $(wildcard src/sketch/sketch.cpp)
+SRC = $(wildcard src/*.cpp) $(wildcard src/sketch/*.cpp)
 
 # All .o files go to build dir.
 OBJ = $(SRC:%.cpp=$(BUILD_DIR)/%.o)

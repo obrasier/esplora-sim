@@ -1,4 +1,10 @@
-
-#include "type_change.h"
+// Need to come up with a better way to do overflow etc.
+// At the moment none exists, but I don't know a better way.... :/
+#include "Arduino.h"
+#include "Serial.h"
+#include "Esplora.h"
+#define arduino_int int
+#define int int_fast16_t
 #include "sketch.ino"
-#include "type_normal.h"
+#undef int
+#define int arduino_int
