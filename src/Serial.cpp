@@ -112,50 +112,50 @@ void _Serial::flush() {
 // }
 
 // void _Serial::println() {
-//   _ln_flush();
+//   _ln();
 // }
 
 // void _Serial::println(int x) {
 //   print(x);
-//   _ln_flush();
+//   _ln();
 // }
 
 // void _Serial::println(int x, int base) {
 //   print(x, base);
-//   _ln_flush();
+//   _ln();
 // }
 
 
 // void _Serial::println(unsigned int x, int base) {
 //   print(x, base);
-//   _ln_flush();
+//   _ln();
 // }
 
 // void _Serial::println(const char *p) {
 //   print(p);
-//   _ln_flush();
+//   _ln();
 // }
 
 // void _Serial::println(std::string s) {
 //   print(s);
-//   _ln_flush();
+//   _ln();
 // }
 
 // void _Serial::println(const String &s) {
 //   print(s);
-//   _ln_flush();
+//   _ln();
 // }
 
 // void _Serial::println(unsigned char uc) {
 //   print(uc);
-//   _ln_flush();
+//   _ln();
 // }
 
 // void _Serial::write(char *p) {
 //   print(p);
 // }
 
-// void _Serial::_ln_flush() {
+// void _Serial::_ln() {
 //   std::cout << std::endl;
 //   fflush(stdout);
 // }

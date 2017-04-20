@@ -3,12 +3,7 @@ void setup() {}
 int count = 0;
 
 void loop() {
-  if (Esplora.readButton(1) == LOW && Esplora.readButton(2) == LOW)
-    Esplora.writeRGB(0,0,127);
-  else if (Esplora.readButton(1) == LOW)
-    Esplora.writeRGB(127, 0, 0);
-  else if (Esplora.readButton(2) == LOW) 
-    Esplora.writeRGB(0, 127, 0);
-  else
-    Esplora.writeRGB(0, 0, 0);
+  Serial.println('c');
+  Serial.println("Printing a sentence");
+  delay(2000);
 }

@@ -22,6 +22,8 @@
 
 
 _Device::_Device() {
+  _sim::send_pin_update();
+  _sim::send_led_update();
   _clock_start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
   _clock_offset_us = 0;
   _micros_elapsed = 0;
@@ -30,7 +32,7 @@ _Device::_Device() {
   set_led(0, MAX_LED);
   // set switches to be high (active low)
   for (const auto &elem : switches)
-    set_mux_value(elem, HIGH);
+    set_mux_value(elem, 1023);
   set_mux_value(CH_JOYSTICK_SW, 1023);
   _sim::send_pin_update();
   _sim::send_led_update();

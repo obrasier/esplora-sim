@@ -104,7 +104,7 @@ int _Esplora::readButton(byte button) {
     return HIGH;
   }
   _sim::increment_counter(1);
-  return (_sim::_device.get_mux_value(button) > 0) ? HIGH : LOW;
+  return (_sim::_device.get_mux_value(button) > 512) ? HIGH : LOW;
 }
 
 int _Esplora::readJoystickX() {

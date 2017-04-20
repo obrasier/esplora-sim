@@ -138,12 +138,12 @@ void print_arrays(std::array<int, NUM_PINS> pins, std::array<int, MUX_PINS> mux)
 
 void send_pin_update() {
   static int prev_pins[NUM_PINS] = {0};
-  static int pins[NUM_PINS] = {0};
   static int prev_mux[MUX_PINS] = {0};
-  static int mux[MUX_PINS] = {0};
   static int prev_pwm_dutycycle[NUM_PINS] = {0};
   if (!send_updates)
     return;
+  int pins[NUM_PINS];
+  int mux[MUX_PINS];
   int pwm_dutycycle[NUM_PINS] = {0};
   int pwm_period[NUM_PINS] = {0};
   std::array<int, MUX_PINS> curr_mux = _device.get_all_mux();
@@ -161,7 +161,7 @@ void send_pin_update() {
     char json[1024];
     char* json_ptr = json;
     char* json_end = json + sizeof(json);
-    appendf(&json_ptr, json_end, "[{ \"type\": \"microbit_pins\", \"ticks\": %d, \"data\": {",
+    appendf(&json_ptr, json_end, "[{ \"type\": \"esplora_pins\", \"ticks\": %d, \"data\": {",
             get_elapsed_micros());
 
     list_to_json("p", &json_ptr, json_end, pins, sizeof(pins) / sizeof(int));
@@ -177,7 +177,6 @@ void send_pin_update() {
     appendf(&json_ptr, json_end, "}}]\n");
 
     write_to_updates(json, json_ptr - json);
-    std::cout << json << std::endl;
 
     memcpy(prev_pins, pins, sizeof(pins));
     memcpy(prev_mux, mux, sizeof(mux));
@@ -195,16 +194,17 @@ void print_led_array() {
 void
 send_led_update() {
   static int prev_leds[NUM_LEDS] = {0};
-  static int leds[NUM_LEDS] = {0};
   if (!send_updates)
     return;
+  int leds[NUM_LEDS];
   std::array<int, NUM_LEDS> curr_leds = _device.get_all_leds();
   memcpy(leds, curr_leds.data(), sizeof(leds));
   if (memcmp(leds, prev_leds, sizeof(leds)) != 0) {
+
     char json[1024];
     char* json_ptr = json;
     char* json_end = json + sizeof(json);
-    appendf(&json_ptr, json_end, "[{ \"type\": \"microbit_leds\", \"ticks\": %d, \"data\": {",
+    appendf(&json_ptr, json_end, "[{ \"type\": \"esplora_leds\", \"ticks\": %d, \"data\": {",
             get_elapsed_micros());
 
     list_to_json("b", &json_ptr, json_end, leds, sizeof(leds) / sizeof(int));
@@ -225,7 +225,7 @@ write_event_ack(const char* event_type, const char* ack_data_json) {
   char* json_end = json + sizeof(json);
 
   appendf(&json_ptr, json_end,
-          "[{ \"type\": \"microbit_ack\", \"ticks\": %d, \"data\": { \"type\": \"%s\", \"data\": "
+          "[{ \"type\": \"esplora_ack\", \"ticks\": %d, \"data\": { \"type\": \"%s\", \"data\": "
           "%s }}]\n",
           get_elapsed_micros(), event_type, ack_data_json ? ack_data_json : "{}");
 
@@ -243,7 +243,7 @@ process_client_button(const json_value* data) {
     return;
   }
   int switch_num = id->as.number;
-  int val = (state->as.number == 0) ? 1 : 0;
+  int val = (state->as.number == 0) ? 1023 : 0;
 
   _device.set_mux_value(switch_num, val);
   write_event_ack("microbit_button", nullptr);

@@ -321,16 +321,16 @@ def main(stdscr):
       #  - Keyboard events (stdin)
       update = s.next_update()
       if update:
-        if update['type'] == 'microbit_leds':
+        if update['type'] == 'esplora_leds':
           # Brightness array.
           ui.update_leds(update['data']['b'])
-        elif update['type'] == 'microbit_pins':
+        elif update['type'] == 'esplora_pins':
           # Pin state/mode and PWM duty cycle & period.
           pass
         elif update['type'] == 'microbit_radio_tx':
           # Radio data sent from micro:bit.
           pass
-        elif update['type'] == 'microbit_ack':
+        elif update['type'] == 'esplora_ack':
           # Acknowledgement of an event (e.g. button press).
           pass
         elif update['type'] == 'stdout':
