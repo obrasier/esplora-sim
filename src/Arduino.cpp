@@ -118,19 +118,18 @@ micros() {
 void delay(uint32_t ms) {
   if (ms == 0)
     return;
-  _sim::increment_counter(ms * 1000UL);
   if (!_sim::fast_mode) {
     // d is the division, number of sleep periods + r, remainder
     int d = ms / sleep_period;
     int r = ms % sleep_period;
     while (!_sim::fast_mode && d) {
       std::this_thread::sleep_for(std::chrono::milliseconds(sleep_period));
-      _sim::increment_counter(0);
+      _sim::increment_counter(sleep_period*1000UL);
       d--;
     }
     if (!_sim::fast_mode && r) {
       std::this_thread::sleep_for(std::chrono::milliseconds(r));
-      _sim::increment_counter(0);
+      _sim::increment_counter(r*1000UL);
     }
   }
 }
@@ -138,19 +137,18 @@ void delay(uint32_t ms) {
 void delayMicroseconds(uint32_t us) {
   if (us == 0)
     return;
-  _sim::increment_counter(us);
   if (!_sim::fast_mode) {
     // d is the division, number of sleep periods + r, remainder
     int d = us / us_sleep_period;
     int r = us % us_sleep_period;
     while (!_sim::fast_mode && d) {
       std::this_thread::sleep_for(std::chrono::microseconds(us_sleep_period));
-      _sim::increment_counter(0);
+      _sim::increment_counter(us_sleep_period);
       d--;
     }
     if (!_sim::fast_mode && r) {
       std::this_thread::sleep_for(std::chrono::microseconds(r));
-      _sim::increment_counter(0);
+      _sim::increment_counter(r);
     }
   }
 }
