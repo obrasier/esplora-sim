@@ -94,7 +94,7 @@ get_elapsed_micros() {
 void
 write_to_updates(const void* buf, size_t count) {
   write(updates_fd, buf, count);
-  // std::this_thread::sleep_for(std::chrono::microseconds(5));
+  std::this_thread::sleep_for(std::chrono::microseconds(5));
 }
 
 
@@ -180,6 +180,7 @@ void send_pin_update() {
 
     memcpy(prev_pins, pins, sizeof(pins));
     memcpy(prev_mux, mux, sizeof(mux));
+    memcpy(prev_pwm_dutycycle, pwm_dutycycle, sizeof(pwm_dutycycle));
   }
 }
 
@@ -199,7 +200,6 @@ send_led_update() {
   std::array<int, NUM_LEDS> curr_leds = _device.get_all_leds();
   memcpy(leds, curr_leds.data(), sizeof(leds));
   if (memcmp(leds, prev_leds, sizeof(leds)) != 0) {
-    print_led_array();
     char json[1024];
     char* json_ptr = json;
     char* json_end = json + sizeof(json);
