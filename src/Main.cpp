@@ -146,10 +146,10 @@ void send_pin_update() {
     return;
   int pwm_dutycycle[NUM_PINS] = {0};
   int pwm_period[NUM_PINS] = {0};
-  std::array<PinState, NUM_PINS> curr_pins = _device.get_all_pins();
   std::array<int, MUX_PINS> curr_mux = _device.get_all_mux();
   for (int i = 0; i < NUM_PINS; i++) {
-    if (curr_pins[i] == GPIO_PIN_OUTPUT_PWM)
+    pins[i] = _device.get_pin_state(i);
+    if (pins[i] == GPIO_PIN_OUTPUT_PWM)
       pwm_dutycycle[i] = _device.get_pwm_dutycycle(i);
   }
   memcpy(mux, curr_mux.data(), sizeof(mux));
@@ -177,6 +177,7 @@ void send_pin_update() {
     appendf(&json_ptr, json_end, "}}]\n");
 
     write_to_updates(json, json_ptr - json);
+    std::cout << json << std::endl;
 
     memcpy(prev_pins, pins, sizeof(pins));
     memcpy(prev_mux, mux, sizeof(mux));

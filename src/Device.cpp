@@ -32,7 +32,8 @@ _Device::_Device() {
   for (const auto &elem : switches)
     set_mux_value(elem, HIGH);
   set_mux_value(CH_JOYSTICK_SW, 1023);
-  _sim::increment_counter(0);
+  _sim::send_pin_update();
+  _sim::send_led_update();
 }
 
 void _Device::add_offset(int64_t us) {
