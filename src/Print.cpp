@@ -34,6 +34,7 @@
 
 /* default implementation: may be overridden */
 void Print::write(const char *str) {
+  pinMode(LED_BUILTIN_TX, OUTPUT);
   digitalWrite(LED_BUILTIN_TX, HIGH);
   while (*str)
     std::putchar(*str++);
@@ -43,6 +44,7 @@ void Print::write(const char *str) {
 
 /* default implementation: may be overridden */
 void Print::write(const uint8_t *buffer, size_t size) {
+  pinMode(LED_BUILTIN_TX, OUTPUT);
   digitalWrite(LED_BUILTIN_TX, HIGH);
   while (size--)
     std::putchar(*buffer++);
@@ -51,6 +53,7 @@ void Print::write(const uint8_t *buffer, size_t size) {
 }
 
 void Print::print(const String &s) {
+  pinMode(LED_BUILTIN_TX, OUTPUT);
   digitalWrite(LED_BUILTIN_TX, HIGH);
   for (unsigned i = 0; i < s.length(); i++) 
     std::putchar(s[i]);
@@ -104,6 +107,7 @@ void Print::print(double n, int digits) {
 void Print::println(void) {
   print('\r');
   print('\n');
+  fflush(stdout);
 }
 
 void Print::println(const String &s) {
