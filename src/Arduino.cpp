@@ -80,7 +80,7 @@ void tone(unsigned int pin, unsigned int freq, unsigned long duration) {
     return;
   tone(pin, freq);
   // _sim::_Later turn_off_tone(duration, true, &noTone, pin);
-  _sim::_device.set_countdown(pin, duration);
+  _sim::_device.set_countdown(pin, duration*1000UL);
 }
 
 void noTone(unsigned int pin) {

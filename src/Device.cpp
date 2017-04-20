@@ -51,7 +51,7 @@ void _Device::increment_counter(uint32_t us) {
       if (_countdown[i] <= 0) {
         _countdown[i] = 0;
         // timer has expired on pin i
-        set_pin_value(_countdown[i], 0);
+        set_tone(i, 0);
       }
     }
   }
@@ -67,6 +67,8 @@ uint64_t _Device::get_micros() {
 void _Device::set_pin_value(int pin, int value) {
   std::lock_guard<std::mutex> lk(_m_pins);
   _pin_values[pin] = value;
+  _sim::send_pin_update();
+  _sim::send_led_update();
 }
 
 int _Device::get_pin_value(int pin) {
@@ -144,6 +146,8 @@ void _Device::set_pwm_dutycycle(int pin, uint32_t dutycycle) {
     }
   }
   _pwm_dutycycle[pin] = dutycycle;
+  if (dutycycle == 0)
+    set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
   set_pin_state(pin, GPIO_PIN_OUTPUT_PWM);
 }
 
@@ -199,7 +203,9 @@ int _Device::get_analog(int pin) {
 }
 
 void _Device::set_tone(int pin, int value) {
-  set_pin_value(pin, value);
+  set_pwm_dutycycle(pin, value);
+  _sim::send_pin_update();
+  _sim::send_led_update();
 }
 
 void _Device::set_led(int led, uint8_t brightness) {
