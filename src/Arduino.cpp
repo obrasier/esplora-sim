@@ -38,7 +38,7 @@ int digitalRead(int pin) {
 }
 
 void analogWrite(int pin, byte value) {
-  if (!_sim::_device.isAnalogPin(pin))
+  if (!_sim::_device.digitalPinHasPWM(pin))
     return;
   pinMode(pin, OUTPUT);
   if (value == 0)

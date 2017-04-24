@@ -91,7 +91,8 @@ class _Device {
   std::mutex _m_states;
   std::mutex _m_leds;
   std::mutex _m_mux;
-  std::mutex _m_pwm;
+  std::mutex _m_pwmp;
+  std::mutex _m_pwmd;
   std::mutex _m_analog;
   std::mutex _m_countdown;
 
@@ -111,7 +112,7 @@ class _Device {
   std::array<int, MUX_PINS> get_all_mux();
   void zero_all_pins();
 
-  void set_tone(int pin, int value);
+  void set_tone(int pin, uint32_t value);
   // pin_mode holds the what is called to pinMode
   void set_pin_mode(int pin, int mode);
   int get_pin_mode(int pin);
@@ -131,8 +132,6 @@ class _Device {
   void set_led(int led, uint8_t brightness);
   void increment_counter(uint32_t us);
   uint64_t get_micros();
-  void tx_led_on();
-  void tx_led_off();
   void start_suspend();
   void stop_suspend();
   void set_countdown(int pin, uint32_t d);

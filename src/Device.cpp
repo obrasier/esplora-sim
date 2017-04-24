@@ -33,6 +33,11 @@ _Device::_Device() {
     _pins[i]._pin = i + 1;
     _pins[i]._voltage = NAN;
   }
+  float freq;
+  for (const auto &elem : _pwm_frequencies){
+    freq = (1.0 / (float)elem.second) * 1000000.0;
+    set_pwm_period(elem.first, static_cast<uint32_t>(freq));
+  }
 
   std::array<int, 4> switches {{ CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4 }};
   zero_all_pins();
@@ -143,26 +148,31 @@ PinState _Device::get_pin_state(int pin) {
   return _pin_states[pin];
 }
 
-void _Device::set_pwm_dutycycle(int pin, uint32_t dutycycle) {
-  std::lock_guard<std::mutex> lk(_m_pwm);
-  _pwm_dutycycle[pin] = dutycycle;
-  if (dutycycle == 0)
+void _Device::set_pwm_dutycycle(int pin, uint32_t a_write) {
+  std::lock_guard<std::mutex> lk(_m_pwmd);
+  if (!digitalPinHasPWM(pin))
+    return;
+  if (a_write == 0)
     set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
   set_pin_state(pin, GPIO_PIN_OUTPUT_PWM);
+  uint32_t high_time = get_pwm_period(pin)*((float)a_write/255.0);
+  std::cout << "pwmd: " << high_time << std::endl;
+  _pwm_dutycycle[pin] = high_time;
 }
 
 uint32_t _Device::get_pwm_dutycycle(int pin) {
-  std::lock_guard<std::mutex> lk(_m_pwm);
+  std::lock_guard<std::mutex> lk(_m_pwmd);
   return _pwm_dutycycle[pin];
 }
 
 void _Device::set_pwm_period(int pin, uint32_t period) {
-  std::lock_guard<std::mutex> lk(_m_pwm);
+  std::lock_guard<std::mutex> lk(_m_pwmp);
+  std::cout << "pwmp: " <<  period << std::endl;
   _pwm_period[pin] = period;
 }
 
 uint32_t _Device::get_pwm_period(int pin) {
-  std::lock_guard<std::mutex> lk(_m_pwm);
+  std::lock_guard<std::mutex> lk(_m_pwmp);
   return  _pwm_period[pin];
 }
 
@@ -197,14 +207,15 @@ int _Device::get_analog(int pin) {
   return 0;
 }
 
-void _Device::set_tone(int pin, int freq) {
-  int period;
-  if (freq == 0) 
-    period = 0;
-  else
+void _Device::set_tone(int pin, uint32_t freq) {
+  int period = 0;
+  if (freq != 0) 
     period = 1000000/freq;
+  std::cout << period << std::endl;
   set_pwm_period(pin, period);
+  std::cout << "set the period" << std::endl;
   set_pwm_dutycycle(pin, freq);
+  std::cout << "set the tone" << std::endl;
   _sim::send_pin_update();
 }
 

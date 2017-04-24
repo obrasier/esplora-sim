@@ -9,6 +9,9 @@ void loop() {
   else {
     Esplora.writeRGB(0, 0, 0);
   }
-  Esplora.tone(500, 1000);
+  // Esplora.tone(500, 1000);
+  analogWrite(3, 200);
+  delay(2000);
+  analogWrite(3, 0);
   delay(2000);
 }
