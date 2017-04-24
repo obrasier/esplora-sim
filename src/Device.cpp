@@ -21,26 +21,28 @@
 #include <iostream>
 
 
-_Device::_Device() {
-  _sim::send_pin_update();
-  _sim::send_led_update();
-  _clock_start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
-  _clock_offset_us = 0;
-  _micros_elapsed = 0;
-  std::array<int, 4> switches {{ CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4 }};
-  zero_all_pins();
-  set_led(0, MAX_LED);
-  // set switches to be high (active low)
-  for (const auto &elem : switches)
-    set_mux_value(elem, 1023);
-  set_mux_value(CH_JOYSTICK_SW, 1023);
-  _sim::send_pin_update();
-  _sim::send_led_update();
+double dmap(double x, double x1, double x2, double y1, double y2) {
+  return (x - x1) * (y2 - y1) / (x2 - x1) + y1;
 }
 
-void _Device::add_offset(int64_t us) {
-  _clock_offset_us += us;
+_Device::_Device() {
+  _sim::send_pin_update();
+  _micros_elapsed = 0;
+
+  for (int i = 0; i < NUM_PINS; i++) {
+    _pins[i]._pin = i + 1;
+    _pins[i]._voltage = 0;
+  }
+
+  std::array<int, 4> switches {{ CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4 }};
+  zero_all_pins();
+  // set switches to be high (active low)
+  for (const auto &elem : switches)
+    set_mux_voltage(elem, 1023);
+  set_mux_voltage(CH_JOYSTICK_SW, 1023);
+  _sim::send_pin_update();
 }
+
 
 void _Device::increment_counter(uint32_t us) {
   _micros_elapsed += us;
@@ -58,17 +60,22 @@ void _Device::increment_counter(uint32_t us) {
 }
 
 uint64_t _Device::get_micros() {
-  // sys_time<std::chrono::microseconds> clock_now = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
-  // auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(clock_now - _clock_start);
-  // _micros_elapsed = elapsed.count() + _clock_offset_us;
   return _micros_elapsed;
 }
 
 void _Device::set_pin_value(int pin, int value) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  _pin_values[pin] = value;
+  int v;
+  if (pin >= 18 && isAnalogPin(pin)) {
+    v = dmap(value, 0.0, 5.0, 0, 1023);
+    set_analog(pin, value);
+  }
+  else {
+    v = (value >= 2.0) ? HIGH : LOW;
+    set_digital(pin, v);
+  }
+  _pin_values[pin] = v;
   _sim::send_pin_update();
-  _sim::send_led_update();
 }
 
 int _Device::get_pin_value(int pin) {
@@ -76,9 +83,10 @@ int _Device::get_pin_value(int pin) {
   return  _pin_values[pin];
 }
 
-void _Device::set_mux_value(int pin, int value) {
+void _Device::set_mux_voltage(int pin, double value) {
   std::lock_guard<std::mutex> lk(_m_mux);
-  _mux[pin] = value;
+  int v = dmap(value, 0.0, 5.0, 0, 1023);
+  _mux[pin] = v;
 }
 
 int _Device::get_mux_value(int pin) {
@@ -101,7 +109,6 @@ void _Device::zero_all_pins() {
   std::lock_guard<std::mutex> lk(_m_pins);
   std::fill(_pin_values.begin(), _pin_values.end(), 0);
 }
-
 
 void _Device::set_pin_mode(int pin, int mode) {
   std::lock_guard<std::mutex> lk(_m_modes);
@@ -137,14 +144,7 @@ PinState _Device::get_pin_state(int pin) {
 }
 
 void _Device::set_pwm_dutycycle(int pin, uint32_t dutycycle) {
-  std::lock_guard<std::mutex> lk(_m_pwmd);
-  for (int i = 0; i < NUM_LEDS; i++) {
-    if (pin == _led_map[i]) {
-      int v = map(dutycycle, 0, 255, 0, MAX_LED);
-      set_led(i, v);
-      break;
-    }
-  }
+  std::lock_guard<std::mutex> lk(_m_pwm);
   _pwm_dutycycle[pin] = dutycycle;
   if (dutycycle == 0)
     set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
@@ -152,27 +152,22 @@ void _Device::set_pwm_dutycycle(int pin, uint32_t dutycycle) {
 }
 
 uint32_t _Device::get_pwm_dutycycle(int pin) {
-  std::lock_guard<std::mutex> lk(_m_pwmd);
+  std::lock_guard<std::mutex> lk(_m_pwm);
   return _pwm_dutycycle[pin];
 }
 
 void _Device::set_pwm_period(int pin, uint8_t period) {
-  std::lock_guard<std::mutex> lk(_m_pwmp);
+  std::lock_guard<std::mutex> lk(_m_pwm);
   _pwm_period[pin] = period;
 }
 
 uint8_t _Device::get_pwm_period(int pin) {
-  std::lock_guard<std::mutex> lk(_m_pwmp);
+  std::lock_guard<std::mutex> lk(_m_pwm);
   return  _pwm_period[pin];
 }
 
 void _Device::set_digital(int pin, int level) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  for (int i = 0; i < NUM_LEDS; i++) {
-    if (pin == _led_map[i]) {
-      set_led(i, (level == HIGH) ? MAX_LED : 0);
-    }
-  }
   _digital_values[pin] = level;
   if (level == LOW)
     set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
@@ -186,7 +181,7 @@ int _Device::get_digital(int pin) {
 }
 
 void _Device::set_analog(int pin, int value) {
-  std::lock_guard<std::mutex> lk(_m_pins);
+  std::lock_guard<std::mutex> lk(_m_analog);
   if (pin >= 18) // work for pin numbers as well as channel numbers
     pin -= 18;
   if (isAnalogPin(pin))
@@ -194,7 +189,7 @@ void _Device::set_analog(int pin, int value) {
 }
 
 int _Device::get_analog(int pin) {
-  std::lock_guard<std::mutex> lk(_m_pins);
+  std::lock_guard<std::mutex> lk(_m_analog);
   if (pin >= 18)
     pin -= 18;
   if (isAnalogPin(pin))
@@ -202,21 +197,17 @@ int _Device::get_analog(int pin) {
   return 0;
 }
 
-void _Device::set_tone(int pin, int value) {
-  set_pwm_dutycycle(pin, value);
+void _Device::set_tone(int pin, int freq) {
+  int period;
+  if (freq == 0) 
+    period = 0;
+  else
+    period = 1000000/freq;
+  set_pwm_period(pin, period);
+  set_pwm_dutycycle(pin, freq);
   _sim::send_pin_update();
-  _sim::send_led_update();
 }
 
-void _Device::set_led(int led, uint8_t brightness) {
-  std::lock_guard<std::mutex> lk(_m_leds);
-  _led_values[led] = brightness;
-}
-
-std::array<int, NUM_LEDS> _Device::get_all_leds() {
-  std::lock_guard<std::mutex> lk(_m_leds);
-  return _led_values;
-}
 
 void _Device::set_countdown(int pin, uint32_t d) {
   std::lock_guard<std::mutex> lk(_m_countdown);
@@ -241,18 +232,9 @@ bool _Device::digitalPinHasPWM(int p) {
 }
 
 bool _Device::isAnalogPin(int p) {
+  if (p >= 18) p -= 18;
   return ((p) >= 0 && (p) <= 11);
 }
-// void _Device::start_suspend() {
-//   _suspend_start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
-// }
-
-// // subtract from the _clock_offset_us the duration of the code suspend in microseconds
-// void _Device::stop_suspend() {
-//   sys_time<std::chrono::microseconds> clock_now = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
-//   auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(clock_now - _suspend_start);
-//   _clock_offset_us -= elapsed.count();
-// }
 
 namespace _sim {
 // check the suspend flag, if suspend is false, then continue
@@ -273,7 +255,6 @@ check_shutdown() {
     running = false;
     fast_mode = true;
     send_pin_update();
-    send_led_update();
     send_updates = false;
   }
 }
@@ -284,6 +265,5 @@ increment_counter(int us) {
   check_suspend();
   check_shutdown();
   send_pin_update();
-  send_led_update();
 }
 } // namespace

@@ -7,9 +7,10 @@
 #include <atomic>
 #include <thread>
 #include <algorithm>
-#include <tuple>
 #include <vector>
+#include <random>
 #include "pins_arduino.h"
+#include "wiring.h"
 
 #define NUM_PINS            31
 #define MUX_PINS            13
@@ -18,7 +19,7 @@
 
 enum PinState {
   GPIO_PIN_OUTPUT_LOW = 0,
-  GPIO_PIN_OUTPUT_HIGH,
+  GPIO_PIN_OUTPUT_HIGH, 
   GPIO_PIN_OUTPUT_PWM,
   GPIO_PIN_INPUT_FLOATING,
   GPIO_PIN_INPUT_FLOATING_LOW,
@@ -43,19 +44,26 @@ void send_led_update();
 }
 
 
+struct Pin {
+  uint32_t _pin;
+  bool _is_output = false;
+  bool _is_analog = false;
+  PinState _state = GPIO_PIN_OUTPUT_LOW;
+  uint8_t _mode = INPUT;
+  float _voltage = NAN;
+  bool _is_pwm = false;
+  uint32_t _dutycylce = 0;
+  uint32_t _value = 0;
+  int64_t _countdown = 0;
+};
+
+
 // The device class stores all the information required about a device.
 // It is designed to be thread-safe internally, so no external mutexes should
 // be required.
 class _Device {
  private:
-  template <class Duration>
-  using sys_time = std::chrono::time_point<std::chrono::system_clock, Duration>;
 
-  sys_time<std::chrono::microseconds> _clock_start;
-  sys_time<std::chrono::microseconds> _suspend_start;
-  sys_time<std::chrono::microseconds> _suspend_end;
-
-  std::atomic<int64_t> _clock_offset_us;
   std::atomic<uint64_t> _micros_elapsed;
 
   std::array<int, NUM_PINS> _pin_values;
@@ -71,28 +79,31 @@ class _Device {
 
   std::array<int, NUM_PINS> _countdown;
 
+  std::array<Pin, NUM_PINS> _pins;
+  std::array<Pin, MUX_PINS> _mux_pins;
+
+  std::array<void (*)(void), 5> _isr_table;
+
   std::mutex _m_device;
   std::mutex _m_pins;
   std::mutex _m_modes;
   std::mutex _m_states;
   std::mutex _m_leds;
   std::mutex _m_mux;
-  std::mutex _m_pwmp;
-  std::mutex _m_pwmd;
+  std::mutex _m_pwm;
+  std::mutex _m_analog;
   std::mutex _m_countdown;
 
   const uint8_t _tx = 2;
   const int MAX_LED = 255;
-  std::array<int, NUM_LEDS> _led_map = {{
-      0, LED_BUILTIN, LED_BUILTIN_TX,
-      LED_BUILTIN_RX, 5, 10, 9 } };
+
+  std::array<int, 5> _interrupt_map = {{0, 1, 2, 3, 7}};
 
  public:
   _Device();
-  void add_offset(int64_t _us);
   void set_pin_value(int pin, int value);
   int get_pin_value(int pin);
-  void set_mux_value(int pin, int value);
+  void set_mux_voltage(int pin, double value);
   int get_mux_value(int pin);
   std::array<PinState, NUM_PINS> get_all_pins();
   std::array<int, MUX_PINS> get_all_mux();
@@ -128,16 +139,6 @@ class _Device {
   bool isAnalogPin(int p);
 };
 
-// class Pin {
-//  private:
-//   uint _pin;
-//   bool _output;
-//   PinMode _mode;
-//   float _analog;
-//   bool _is_pwm;
 
-
-
-// };
 
 #endif

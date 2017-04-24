@@ -215,8 +215,8 @@ class CursesUI:
     self.toggle_button(b)
 
   def toggle_button(self, b):
-    self._buttons[b] = 1 - self._buttons[b]
-    self._sim.event({'type': 'microbit_button', 'data': {'id': b, 'state': self._buttons[b]}})
+    self._buttons[b] = 5 - self._buttons[b]
+    self._sim.event({'type': 'arduino_mux', 'data': {'pin': b, 'voltage': self._buttons[b]}})
     self.draw_buttons()
 
   def show_help(self):
@@ -324,13 +324,13 @@ def main(stdscr):
         if update['type'] == 'esplora_leds':
           # Brightness array.
           ui.update_leds(update['data']['b'])
-        elif update['type'] == 'esplora_pins':
+        elif update['type'] == 'arduino_pins':
           # Pin state/mode and PWM duty cycle & period.
           pass
         elif update['type'] == 'microbit_radio_tx':
           # Radio data sent from micro:bit.
           pass
-        elif update['type'] == 'esplora_ack':
+        elif update['type'] == 'arduino_ack':
           # Acknowledgement of an event (e.g. button press).
           pass
         elif update['type'] == 'stdout':

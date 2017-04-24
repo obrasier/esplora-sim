@@ -126,48 +126,34 @@ list_to_json(const char* field, char** json_ptr, char* json_end, int* values, si
   }
 }
 
-void print_arrays(std::array<int, NUM_PINS> pins, std::array<int, MUX_PINS> mux) {
-  for (auto i : pins)
-    std::cout << i << ' ';
-  std::cout << std::endl;
-  for (auto i : mux)
-    std::cout << i << ' ';
-  std::cout << std::endl;
-}
-
 
 void send_pin_update() {
   static int prev_pins[NUM_PINS] = {0};
-  static int prev_mux[MUX_PINS] = {0};
   static int prev_pwm_dutycycle[NUM_PINS] = {0};
+  static int prev_pwm_period[NUM_PINS] = {0};
   if (!send_updates)
     return;
   int pins[NUM_PINS];
-  int mux[MUX_PINS];
   int pwm_dutycycle[NUM_PINS] = {0};
   int pwm_period[NUM_PINS] = {0};
-  std::array<int, MUX_PINS> curr_mux = _device.get_all_mux();
   for (int i = 0; i < NUM_PINS; i++) {
     pins[i] = _device.get_pin_state(i);
     if (pins[i] == GPIO_PIN_OUTPUT_PWM)
       pwm_dutycycle[i] = _device.get_pwm_dutycycle(i);
+      pwm_period[i] = _device.get_pwm_period(i);
   }
-  memcpy(mux, curr_mux.data(), sizeof(mux));
 
   if (memcmp(pins, prev_pins, sizeof(prev_pins)) != 0 ||
-      memcmp(mux, prev_mux, sizeof(prev_mux)) != 0 ||
+      memcmp(pwm_period, prev_pwm_period, sizeof(prev_pwm_period)) != 0 ||
       memcmp(pwm_dutycycle, prev_pwm_dutycycle, sizeof(prev_pwm_dutycycle)) != 0 ) {
     // pin states have changed
     char json[1024];
     char* json_ptr = json;
     char* json_end = json + sizeof(json);
-    appendf(&json_ptr, json_end, "[{ \"type\": \"esplora_pins\", \"ticks\": %d, \"data\": {",
+    appendf(&json_ptr, json_end, "[{ \"type\": \"arduino_pins\", \"ticks\": %d, \"data\": {",
             get_elapsed_micros());
 
     list_to_json("p", &json_ptr, json_end, pins, sizeof(pins) / sizeof(int));
-    appendf(&json_ptr, json_end, ", ");
-
-    list_to_json("mux", &json_ptr, json_end, mux, sizeof(mux) / sizeof(int));
     appendf(&json_ptr, json_end, ", ");
 
     list_to_json("pwmd", &json_ptr, json_end, pwm_dutycycle, sizeof(pwm_dutycycle) / sizeof(int));
@@ -177,42 +163,11 @@ void send_pin_update() {
     appendf(&json_ptr, json_end, "}}]\n");
 
     write_to_updates(json, json_ptr - json);
+    std::cout << json << std::endl;
 
     memcpy(prev_pins, pins, sizeof(pins));
-    memcpy(prev_mux, mux, sizeof(mux));
     memcpy(prev_pwm_dutycycle, pwm_dutycycle, sizeof(pwm_dutycycle));
-  }
-}
-
-void print_led_array() {
-  std::array<int, NUM_LEDS> curr_leds = _device.get_all_leds();
-  for (auto i : curr_leds)
-    std::cout << i << ' ';
-  std::cout << std::endl;
-}
-
-void
-send_led_update() {
-  static int prev_leds[NUM_LEDS] = {0};
-  if (!send_updates)
-    return;
-  int leds[NUM_LEDS];
-  std::array<int, NUM_LEDS> curr_leds = _device.get_all_leds();
-  memcpy(leds, curr_leds.data(), sizeof(leds));
-  if (memcmp(leds, prev_leds, sizeof(leds)) != 0) {
-
-    char json[1024];
-    char* json_ptr = json;
-    char* json_end = json + sizeof(json);
-    appendf(&json_ptr, json_end, "[{ \"type\": \"esplora_leds\", \"ticks\": %d, \"data\": {",
-            get_elapsed_micros());
-
-    list_to_json("b", &json_ptr, json_end, leds, sizeof(leds) / sizeof(int));
-
-    appendf(&json_ptr, json_end, "}}]\n");
-
-    write_to_updates(json, json_ptr - json);
-    memcpy(prev_leds, leds, sizeof(leds));
+    memcpy(prev_pwm_period, pwm_period, sizeof(pwm_period));
   }
 }
 
@@ -225,147 +180,69 @@ write_event_ack(const char* event_type, const char* ack_data_json) {
   char* json_end = json + sizeof(json);
 
   appendf(&json_ptr, json_end,
-          "[{ \"type\": \"esplora_ack\", \"ticks\": %d, \"data\": { \"type\": \"%s\", \"data\": "
+          "[{ \"type\": \"arduino_ack\", \"ticks\": %d, \"data\": { \"type\": \"%s\", \"data\": "
           "%s }}]\n",
           get_elapsed_micros(), event_type, ack_data_json ? ack_data_json : "{}");
 
+  // std::cout << json << std::endl;
   write_to_updates(json, json_ptr - json);
 }
 
-// Process a button event
+// process a multiplexer event - the pins are as follows:
+// 0 - button 1
+// 1 - button 2
+// 2 - button 3
+// 3 - button 4
+// 4 - slider
+// 5 - light
+// 6 - temperature
+// 7 - microphone
+// 8 - tinkerkit A
+// 9 - tinkerkit B
+// 10 - joystick sw
+// 11 - joystick x
+// 12 - joystick y
 void
-process_client_button(const json_value* data) {
-  const json_value* id = json_value_get(data, "id");
-  const json_value* state = json_value_get(data, "state");
-  if (!id || !state || id->type != JSON_VALUE_TYPE_NUMBER ||
-      state->type != JSON_VALUE_TYPE_NUMBER) {
-    fprintf(stderr, "Button event missing id and/or state\n");
+process_client_mux(const json_value* data) {
+  const json_value* id = json_value_get(data, "pin");
+  const json_value* voltage = json_value_get(data, "voltage");
+  if (!id || !voltage || id->type != JSON_VALUE_TYPE_NUMBER ||
+      voltage->type != JSON_VALUE_TYPE_NUMBER) {
+    fprintf(stderr, "Mux event missing id and/or voltage\n");
     return;
   }
-  int switch_num = id->as.number;
-  int val = (state->as.number == 0) ? 1023 : 0;
 
-  _device.set_mux_value(switch_num, val);
-  write_event_ack("microbit_button", nullptr);
-}
-
-// Process a temperature event
-void
-process_client_temperature(const json_value* data) {
-  const json_value* t = json_value_get(data, "t");
-  if (!t || t->type != JSON_VALUE_TYPE_NUMBER) {
-    fprintf(stderr, "Temperature event missing t\n");
-    return;
-  }
-  _device.set_mux_value(CH_TEMPERATURE, t->as.number);
-  char ack_json[1024];
-  snprintf(ack_json, sizeof(ack_json), "{\"t\": %d", static_cast<int32_t>(t->as.number));
-  write_event_ack("temperature", ack_json);
-}
-
-// Process a temperature event
-void
-process_client_light(const json_value* data) {
-  const json_value* l = json_value_get(data, "l");
-  if (!l || l->type != JSON_VALUE_TYPE_NUMBER) {
-    fprintf(stderr, "Light event missing l\n");
-    return;
-  }
-  _device.set_mux_value(CH_LIGHT, l->as.number);
-  char ack_json[1024];
-  snprintf(ack_json, sizeof(ack_json), "{\"l\": %d", static_cast<int32_t>(l->as.number));
-  write_event_ack("light", ack_json);
-}
-
-// Process a slider event
-void
-process_client_slider(const json_value* data) {
-  const json_value* s = json_value_get(data, "s");
-  if (!s || s->type != JSON_VALUE_TYPE_NUMBER) {
-    fprintf(stderr, "Slider event missing s\n");
-    return;
-  }
-  _device.set_mux_value(CH_SLIDER, s->as.number);
-  char ack_json[1024];
-  snprintf(ack_json, sizeof(ack_json), "{\"s\": %d", static_cast<int32_t>(s->as.number));
-  write_event_ack("slider", ack_json);
-}
-
-
-// Process a slider event
-void
-process_client_microphone(const json_value* data) {
-  const json_value* mic = json_value_get(data, "mic");
-  if (!mic || mic->type != JSON_VALUE_TYPE_NUMBER) {
-    fprintf(stderr, "Microphone event missing mic\n");
-    return;
-  }
-  _device.set_mux_value(CH_MIC, mic->as.number);
-  char ack_json[1024];
-  snprintf(ack_json, sizeof(ack_json), "{\"mic\": %d", static_cast<int32_t>(mic->as.number));
-  write_event_ack("mic", ack_json);
-}
-
-// Process a accelerometer event
-void
-process_client_accel(const json_value* data) {
-  const json_value* id = json_value_get(data, "id");
-  const json_value* state = json_value_get(data, "state");
-  if (!id || !state || id->type != JSON_VALUE_TYPE_NUMBER ||
-      state->type != JSON_VALUE_TYPE_NUMBER) {
-    fprintf(stderr, "Joystick event missing id and/or state\n");
-    return;
-  }
   int pin_num = id->as.number;
-  int val = state->as.number;
-  _device.set_pin_value(pin_num, val);
-  write_event_ack("accel", nullptr);
-}
-
-// Process joystick switch event
-void
-process_client_joystick_sw(const json_value* data) {
-  const json_value* j_sw = json_value_get(data, "j_sw");
-  if (!j_sw || j_sw->type != JSON_VALUE_TYPE_NUMBER) {
-    fprintf(stderr, "Joystick switch event missing j_sw\n");
-    return;
-  }
-  _device.set_mux_value(CH_JOYSTICK_SW, (j_sw->as.number == 0) ? 1023 : 0);
+  double v = voltage->as.number;
+  _device.set_mux_voltage(pin_num, v);
   char ack_json[1024];
-  snprintf(ack_json, sizeof(ack_json), "{\"j_sw\": %d", static_cast<int32_t>(j_sw->as.number));
-  write_event_ack("joystick_switch", ack_json);
+  snprintf(ack_json, sizeof(ack_json), "{\"id\": %d, \"v\": %.2f}", static_cast<int32_t>(pin_num), static_cast<double>(v));
+  write_event_ack("arduino_mux", ack_json);
 }
 
-// Process a joystick event. Note the joystick is 11 and 12 on
-// the multiplexer, so we apply an offset of 11 to the value.
-void
-process_client_joystick(const json_value* data) {
-  const json_value* id = json_value_get(data, "id");
-  const json_value* state = json_value_get(data, "state");
-  if (!id || !state || id->type != JSON_VALUE_TYPE_NUMBER ||
-      state->type != JSON_VALUE_TYPE_NUMBER) {
-    fprintf(stderr, "Joystick event missing id and/or state\n");
-    return;
-  }
-  int pin_num = id->as.number + CH_JOYSTICK_X;
-  int val = state->as.number;
-  _device.set_mux_value(pin_num, val);
-  write_event_ack("joystick", nullptr);
-}
-
+// Esplora pins
+// 5 - Red
+// 10 - Green
+// 9 - Blue
+// 23 - A5 - accel x
+// 29 - A11 - accel y
+// 24 - A6 - accel z
+// 6 - speaker
 void
 process_client_pins(const json_value* data) {
-  const json_value* id = json_value_get(data, "id");
-  const json_value* state = json_value_get(data, "state");
-  if (!id || !state || id->type != JSON_VALUE_TYPE_NUMBER ||
-      state->type != JSON_VALUE_TYPE_NUMBER) {
-    fprintf(stderr, "Button event missing id and/or state\n");
+  const json_value* id = json_value_get(data, "pin");
+  const json_value* voltage = json_value_get(data, "voltage");
+  if (!id || !voltage || id->type != JSON_VALUE_TYPE_NUMBER ||
+      voltage->type != JSON_VALUE_TYPE_NUMBER) {
+    fprintf(stderr, "Button event missing id and/or voltage\n");
     return;
   }
   int pin_num = id->as.number;
-  int val = state->as.number;
+  int val = voltage->as.number;
   _device.set_pin_value(pin_num, val);
-  write_event_ack("microbit_pin", nullptr);
+  char ack_json[1024];
+  snprintf(ack_json, sizeof(ack_json), "{\"id\": %d, \"v\":%.2f,", static_cast<int32_t>(pin_num), static_cast<double>(val));
+  write_event_ack("arduino_pin", ack_json);
 }
 
 
@@ -397,33 +274,12 @@ process_client_json(const json_value* json) {
       } else if (strncmp(event_type->as.string, "suspend", 7) == 0) {
         std::unique_lock<std::mutex> lk(m_suspend);
         suspend = true;
-      } else if (strncmp(event_type->as.string, "microbit_button", 15) == 0) {
-        // Button state change.
-        process_client_button(event_data);
-      } else if (strncmp(event_type->as.string, "temperature", 15) == 0) {
-        // Temperature change.
-        process_client_temperature(event_data);
-      } else if (strncmp(event_type->as.string, "accelerometer", 13) == 0) {
-        // Accelerometer values change.
-        process_client_accel(event_data);
-      } else if (strncmp(event_type->as.string, "microbit_pin", 13) == 0) {
+      } else if (strncmp(event_type->as.string, "arduino_pin", 13) == 0) {
         // Something driving the GPIO pins.
         process_client_pins(event_data);
-      } else if (strncmp(event_type->as.string, "light", 13) == 0) {
-        // Light event
-        process_client_light(event_data);
-      } else if (strncmp(event_type->as.string, "microphone", 13) == 0) {
-        // Light event
-        process_client_microphone(event_data);
-      } else if (strncmp(event_type->as.string, "joystick", 13) == 0) {
-        // Light event
-        process_client_joystick(event_data);
-      } else if (strncmp(event_type->as.string, "joystick_sw", 13) == 0) {
-        // Light event
-        process_client_joystick_sw(event_data);
-      } else if (strncmp(event_type->as.string, "slider", 13) == 0) {
+      } else if (strncmp(event_type->as.string, "arduino_mux", 11) == 0) {
         // Something driving the GPIO pins.
-        process_client_slider(event_data);
+        process_client_mux(event_data);
       } else {
         fprintf(stderr, "Unknown event type: %s\n", event_type->as.string);
       }
@@ -462,7 +318,7 @@ process_client_event(int fd) {
     }
     line_start = line_end + 1;
   }
-  write_event_ack("microbit_event", nullptr);
+  write_event_ack("arduino_event", nullptr);
 }
 
 

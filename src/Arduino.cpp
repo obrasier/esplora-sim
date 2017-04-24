@@ -10,7 +10,7 @@ const int us_sleep_period = sleep_period * 1000;
 
 
 void pinMode(int pin, int mode) {
-  if (pin > NUM_PINS || pin <= 0)
+  if (pin > NUM_PINS || pin < 0)
     return;
   if (mode == INPUT || mode == INPUT_PULLUP || mode == OUTPUT) {
     _sim::_device.set_pin_mode(pin, mode);
@@ -19,7 +19,7 @@ void pinMode(int pin, int mode) {
 }
 
 void digitalWrite(int pin, byte value) {
-  if (pin > NUM_PINS || pin <= 0)
+  if (pin > NUM_PINS || pin < 0)
     return;
   int mode = _sim::_device.get_pin_mode(pin);
   if (mode == INPUT) {
@@ -33,9 +33,7 @@ void digitalWrite(int pin, byte value) {
 }
 
 int digitalRead(int pin) {
-  _sim::_device.increment_counter(1);
-  if (pin > NUM_PINS || pin <= 0)
-    return 0;
+  _sim::increment_counter(1);
   return _sim::_device.get_digital(pin);
 }
 
@@ -54,8 +52,6 @@ void analogWrite(int pin, byte value) {
 }
 
 int analogRead(int pin) {
-  if (!_sim::_device.isAnalogPin(pin))
-    return 0;
   _sim::increment_counter(1);
   return _sim::_device.get_analog(pin);
 }
@@ -66,7 +62,7 @@ void analogReference(uint8_t mode __attribute__((unused))) {
 
 //------ Advanced I/O ----------------------
 void tone(unsigned int pin, unsigned int freq) {
-  if (pin > NUM_PINS || pin <= 0)
+  if (pin > NUM_PINS)
     return;
   if (!_sim::_device.digitalPinHasPWM(pin))
     return;
@@ -76,7 +72,7 @@ void tone(unsigned int pin, unsigned int freq) {
 }
 
 void tone(unsigned int pin, unsigned int freq, unsigned long duration) {
-  if (pin > NUM_PINS || pin <= 0)
+  if (pin > NUM_PINS)
     return;
   tone(pin, freq);
   // _sim::_Later turn_off_tone(duration, true, &noTone, pin);
@@ -179,7 +175,4 @@ long random(long lowerLimit, long upperLimit) {
   }
   return temp;
 }
-
-
-
 
