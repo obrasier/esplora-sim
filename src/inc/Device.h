@@ -8,6 +8,7 @@
 #include <thread>
 #include <algorithm>
 #include <vector>
+#include <utility>
 #include <random>
 #include "pins_arduino.h"
 #include "wiring.h"
@@ -71,7 +72,7 @@ class _Device {
   std::array<int, NUM_PINS> _pin_modes;
   std::array<int, NUM_LEDS> _led_values;
   std::array<int, NUM_PINS> _pwm_dutycycle;
-  std::array<int, NUM_PINS> _pwm_period;
+  std::array<uint32_t, NUM_PINS> _pwm_period;
   std::array<int, MUX_PINS> _mux;
 
   std::array<uint, NUM_ANALOG_PINS> _analog_values;
@@ -98,6 +99,7 @@ class _Device {
   const int MAX_LED = 255;
 
   std::array<int, 5> _interrupt_map = {{0, 1, 2, 3, 7}};
+  std::array<std::pair<int, int>, 7> _pwm_frequencies = {{ {3, 980}, {5, 490}, {6, 490}, {9,490}, {10,490}, {11,490}, {13,980} }};
 
  public:
   _Device();
@@ -119,8 +121,8 @@ class _Device {
   PinState get_pin_state(int pin);
   void set_pwm_dutycycle(int pin, uint32_t dutycycle);
   uint32_t get_pwm_dutycycle(int pin);
-  void set_pwm_period(int pin, uint8_t period);
-  uint8_t get_pwm_period(int pin);
+  void set_pwm_period(int pin, uint32_t period);
+  uint32_t get_pwm_period(int pin);
   void set_digital(int pin, int level);
   int get_digital(int pin);
   void set_analog(int pin, int value);

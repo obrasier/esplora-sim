@@ -9,4 +9,6 @@ void loop() {
   else {
     Esplora.writeRGB(0, 0, 0);
   }
+  Esplora.tone(500, 1000);
+  delay(2000);
 }

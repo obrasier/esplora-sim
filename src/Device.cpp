@@ -31,7 +31,7 @@ _Device::_Device() {
 
   for (int i = 0; i < NUM_PINS; i++) {
     _pins[i]._pin = i + 1;
-    _pins[i]._voltage = 0;
+    _pins[i]._voltage = NAN;
   }
 
   std::array<int, 4> switches {{ CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4 }};
@@ -71,7 +71,7 @@ void _Device::set_pin_value(int pin, int value) {
     set_analog(pin, value);
   }
   else {
-    v = (value >= 2.0) ? HIGH : LOW;
+    v =  (value >= 1.5) ? HIGH : LOW;
     set_digital(pin, v);
   }
   _pin_values[pin] = v;
@@ -156,12 +156,12 @@ uint32_t _Device::get_pwm_dutycycle(int pin) {
   return _pwm_dutycycle[pin];
 }
 
-void _Device::set_pwm_period(int pin, uint8_t period) {
+void _Device::set_pwm_period(int pin, uint32_t period) {
   std::lock_guard<std::mutex> lk(_m_pwm);
   _pwm_period[pin] = period;
 }
 
-uint8_t _Device::get_pwm_period(int pin) {
+uint32_t _Device::get_pwm_period(int pin) {
   std::lock_guard<std::mutex> lk(_m_pwm);
   return  _pwm_period[pin];
 }
