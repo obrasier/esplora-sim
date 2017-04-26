@@ -53,6 +53,7 @@ void analogWrite(int pin, byte value) {
 
 int analogRead(int pin) {
   _sim::increment_counter(1);
+  if (pin >= 0 && pin <= 11) pin += 18;
   return _sim::_device.get_analog(pin);
 }
 

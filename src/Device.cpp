@@ -46,8 +46,8 @@ _Device::_Device() {
   std::array<int, 4> switches {{ CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4 }};
   // set switches to be high (active low)
   for (const auto &elem : switches)
-    set_mux_voltage(elem, 1023);
-  set_mux_voltage(CH_JOYSTICK_SW, 1023);
+    set_mux_voltage(elem, 5.0);
+  set_mux_voltage(CH_JOYSTICK_SW, 5.0);
   _sim::send_pin_update();
 }
 
@@ -71,37 +71,30 @@ uint64_t _Device::get_micros() {
   return _micros_elapsed;
 }
 
-void _Device::set_pin_value(int pin, int value) {
+void _Device::set_pin_voltage(int pin, int value) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  int v;
-  v = dmap(value, 0.0, 5.0, 0, 1023);
   _pins[pin]._voltage = value;
-  if (_pins[pin]._is_analog) {
-    _pins[pin]._value = v;
-    set_analog(pin, value);
-  } else {
-    v =  (value >= 1.5) ? HIGH : LOW;
-    set_digital(pin, v);
-  }
-  _pin_values[pin] = v;
-  _sim::send_pin_update();
 }
 
-int _Device::get_pin_value(int pin) {
+double _Device::get_pin_voltage(int pin) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  return  _pin_values[pin];
+  return  _pins[pin]._voltage;
 }
 
 void _Device::set_mux_voltage(int pin, double value) {
   std::lock_guard<std::mutex> lk(_m_mux);
   _mux_pins[pin]._voltage = value;
-  int v = dmap(value, 0.0, 5.0, 0, 1023);
-  _mux_pins[pin]._value = v;
 }
+
+double _Device::get_mux_voltage(int pin) {
+  std::lock_guard<std::mutex> lk(_m_mux);
+  return _mux_pins[pin]._voltage;
+}
+
 
 int _Device::get_mux_value(int pin) {
   std::lock_guard<std::mutex> lk(_m_mux);
-  return _mux_pins[pin]._value;
+  return dmap(_mux_pins[pin]._voltage, 0, 5.0, 0, 1023);
 }
 
 
@@ -109,13 +102,17 @@ void _Device::set_pin_mode(int pin, int mode) {
   std::lock_guard<std::mutex> lk(_m_modes);
   switch (mode) {
     case INPUT:
-      set_pin_state(pin, GPIO_PIN_INPUT_FLOATING);
+      _pins[pin]._state = GPIO_PIN_INPUT_FLOATING;
+      set_input(pin);
       break;
     case INPUT_PULLUP:
+      _pins[pin]._state = GPIO_PIN_INPUT_UP_HIGH;
       set_pin_state(pin, GPIO_PIN_INPUT_UP_HIGH);
+      set_input(pin);
       break;
     case OUTPUT:
-      set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
+      _pins[pin]._state = GPIO_PIN_OUTPUT_LOW;
+      set_output(pin);
       break;
     default:
       return;
@@ -140,11 +137,12 @@ PinState _Device::get_pin_state(int pin) {
 
 void _Device::set_pwm_dutycycle(int pin, uint32_t a_write) {
   std::lock_guard<std::mutex> lk(_m_pwmd);
-  if (!_pins[pin]._is_pwm)
-    return;
+  set_output(pin);
+  _pins[pin]._is_pwm = true;
   if (a_write == 0)
-    set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
-  set_pin_state(pin, GPIO_PIN_OUTPUT_PWM);
+    _pins[pin]._state = GPIO_PIN_OUTPUT_LOW;
+  else
+    _pins[pin]._state = GPIO_PIN_OUTPUT_PWM;
   uint32_t high_time = _pins[pin]._pwm_period * ((float)a_write / 255.0);
   _pins[pin]._pwm_high_time = high_time;
 }
@@ -156,42 +154,43 @@ uint32_t _Device::get_pwm_dutycycle(int pin) {
 
 void _Device::set_pwm_period(int pin, uint32_t period) {
   std::lock_guard<std::mutex> lk(_m_pwmp);
-  _pwm_period[pin] = period;
+  _pins[pin]._pwm_period = period;
 }
 
 uint32_t _Device::get_pwm_period(int pin) {
   std::lock_guard<std::mutex> lk(_m_pwmp);
-  return  _pwm_period[pin];
+  return  _pins[pin]._pwm_period;
 }
 
 void _Device::set_digital(int pin, int level) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  _digital_values[pin] = level;
-  if (level == LOW)
-    set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
-  else if (level == HIGH)
-    set_pin_state(pin, GPIO_PIN_OUTPUT_HIGH);
+  _pins[pin]._state = (level == LOW) ? GPIO_PIN_OUTPUT_LOW : GPIO_PIN_OUTPUT_HIGH;
 }
 
 int _Device::get_digital(int pin) {
   std::lock_guard<std::mutex> lk(_m_pins);
-  return _digital_values[pin];
+  Pin p = _pins[pin];
+  if (isnan(p._voltage)) {
+    if (p._mode == INPUT_PULLUP)
+      return HIGH;
+    else
+      return (rand() % 2 == 0) ? HIGH : LOW;
+  }
+  if (p._mode == INPUT)
+    return (p._voltage >= 3.0) ? HIGH : LOW;
+  else if (p._mode == INPUT_PULLUP)
+    return (p._voltage >= 1.0) ? HIGH : LOW;
+  else if (p._mode == OUTPUT)
+    return (p._state == GPIO_PIN_OUTPUT_HIGH) ? HIGH : LOW;
+  return (rand() % 2 == 0) ? HIGH : LOW;
 }
 
-void _Device::set_analog(int pin, int value) {
+uint32_t _Device::get_analog(int pin) {
   std::lock_guard<std::mutex> lk(_m_analog);
-  if (pin >= 18) // work for pin numbers as well as channel numbers
-    pin -= 18;
-  if (isAnalogPin(pin))
-    _analog_values[pin] = value;
-}
-
-int _Device::get_analog(int pin) {
-  std::lock_guard<std::mutex> lk(_m_analog);
-  if (pin >= 18)
-    pin -= 18;
-  if (isAnalogPin(pin))
-    return _analog_values[pin];
+  if (pin >= 0 && pin <= 11)
+    pin += 18;
+  if (_pins[pin]._is_analog)
+    return dmap(_pins[pin]._voltage, 0, 5.0, 0, 1023);
   return 0;
 }
 
@@ -211,15 +210,14 @@ void _Device::set_countdown(int pin, uint32_t d) {
 }
 
 void _Device::set_pullup_digwrite(int pin, int value) {
-  PinState mode = get_pin_state(pin);
+  PinState state = _pins[pin]._state;
   if (value == HIGH) {
     // enable pullup
-    if (mode >= GPIO_PIN_INPUT_FLOATING && mode <= GPIO_PIN_INPUT_FLOATING_HIGH) {
-      set_pin_state(pin, GPIO_PIN_INPUT_UP_HIGH);
-    }
+    if (state >= GPIO_PIN_INPUT_FLOATING && state <= GPIO_PIN_INPUT_FLOATING_HIGH)
+      _pins[pin]._state = GPIO_PIN_INPUT_UP_HIGH;
   } else if (value == LOW) {
-    if (mode >= GPIO_PIN_INPUT_UP_LOW && mode <= GPIO_PIN_INPUT_DOWN_HIGH)
-      set_pin_state(pin, GPIO_PIN_INPUT_FLOATING);
+    if (state >= GPIO_PIN_INPUT_UP_LOW && state <= GPIO_PIN_INPUT_DOWN_HIGH)
+      _pins[pin]._state = GPIO_PIN_INPUT_FLOATING;
   }
 }
 
@@ -230,6 +228,17 @@ bool _Device::digitalPinHasPWM(int p) {
 bool _Device::isAnalogPin(int p) {
   return (p >= 0 && p <= 11);
 }
+
+void _Device::set_input(int pin) {
+  _pins[pin]._is_output = false;
+  _pins[pin]._is_pwm = false;
+}
+
+void _Device::set_output(int pin) {
+  _pins[pin]._is_output = true;
+  _pins[pin]._is_pwm = false;
+}
+
 
 namespace _sim {
 // check the suspend flag, if suspend is false, then continue

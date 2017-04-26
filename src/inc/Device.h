@@ -44,10 +44,16 @@ void send_led_update();
 
 }
 
+struct MPin {
+  uint32_t _pin;
+  bool _is_analog = true;
+  float _voltage = 2.5;
+};
 
 struct Pin {
   uint32_t _pin;
   bool _is_output = false;
+  bool _output = false;
   bool _is_analog = false;
   PinState _state = GPIO_PIN_OUTPUT_LOW;
   uint8_t _mode = NAN;
@@ -55,7 +61,6 @@ struct Pin {
   bool _is_pwm = false;
   uint32_t _pwm_period = 0;
   uint32_t _pwm_high_time = 0;
-  uint32_t _value = 0;
   int64_t _countdown = 0;
 };
 
@@ -82,7 +87,7 @@ class _Device {
   std::array<int, NUM_PINS> _countdown;
 
   std::array<Pin, NUM_PINS> _pins;
-  std::array<Pin, MUX_PINS> _mux_pins;
+  std::array<MPin, MUX_PINS> _mux_pins;
 
   std::array<void (*)(void), 5> _isr_table;
 
@@ -100,12 +105,17 @@ class _Device {
   std::array<int, 5> _interrupt_map = {{0, 1, 2, 3, 7}};
   std::array<std::pair<int, int>, 7> _pwm_frequencies = {{ {3, 980}, {5, 490}, {6, 490}, {9,490}, {10,490}, {11,490}, {13,980} }};
 
+  double get_voltage(int pin);
+  void set_input(int pin);
+  void set_output(int pin);
+
  public:
   _Device();
-  void set_pin_value(int pin, int value);
-  int get_pin_value(int pin);
+  void set_pin_voltage(int pin, int value);
+  double get_pin_voltage(int pin);
   void set_mux_voltage(int pin, double value);
   int get_mux_value(int pin);
+  double get_mux_voltage(int pin);
 
   void set_tone(int pin, uint32_t value);
   // pin_mode holds the what is called to pinMode
@@ -121,9 +131,7 @@ class _Device {
   uint32_t get_pwm_period(int pin);
   void set_digital(int pin, int level);
   int get_digital(int pin);
-  void set_analog(int pin, int value);
-  int get_analog(int pin);
-  std::array<int, NUM_LEDS> get_all_leds();
+  uint32_t get_analog(int pin);
   void increment_counter(uint32_t us);
   uint64_t get_micros();
   void start_suspend();

@@ -92,9 +92,9 @@ int _Esplora::readJoystickButton() {
 int _Esplora::readAccelerometer(byte axis) {
   _sim::increment_counter(1);
   switch (axis) {
-    case X_AXIS: return _sim::_device.get_pin_value(ACCEL_X_PIN); 
-    case Y_AXIS: return _sim::_device.get_pin_value(ACCEL_Y_PIN);
-    case Z_AXIS: return _sim::_device.get_pin_value(ACCEL_Z_PIN);
+    case X_AXIS: return analogRead(ACCEL_X_PIN) - 512; 
+    case Y_AXIS: return analogRead(ACCEL_Y_PIN) - 512;
+    case Z_AXIS: return analogRead(ACCEL_Z_PIN) - 512;
     default: return 0;
   }
 }

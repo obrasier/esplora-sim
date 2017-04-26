@@ -239,7 +239,7 @@ process_client_pins(const json_value* data) {
   }
   int pin_num = id->as.number;
   int val = voltage->as.number;
-  _device.set_pin_value(pin_num, val);
+  _device.set_pin_voltage(pin_num, val);
   char ack_json[1024];
   snprintf(ack_json, sizeof(ack_json), "{\"id\": %d, \"v\":%.2f}", static_cast<int32_t>(pin_num), static_cast<double>(val));
   write_event_ack("arduino_pin", ack_json);
@@ -284,6 +284,7 @@ process_client_json(const json_value* json) {
         fprintf(stderr, "Unknown event type: %s\n", event_type->as.string);
       }
       char msg_text[120];
+      std::cout << msg_text << std::endl;
       sprintf(msg_text, "event type: %s", event_type->as.string);
     }
     event = event->next;
