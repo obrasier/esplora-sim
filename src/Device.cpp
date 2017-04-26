@@ -39,12 +39,11 @@ _Device::_Device() {
   }
   float freq;
   for (const auto &elem : _pwm_frequencies) {
-    freq = (1.0 / (float)elem.second) * 1000000.0;
+    freq = (1.0 / static_cast<float>(elem.second)) * 1000000.0;
     set_pwm_period(elem.first, static_cast<uint32_t>(freq));
   }
 
   std::array<int, 4> switches {{ CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4 }};
-  zero_all_pins();
   // set switches to be high (active low)
   for (const auto &elem : switches)
     set_mux_voltage(elem, 1023);
@@ -97,7 +96,6 @@ void _Device::set_mux_voltage(int pin, double value) {
   std::lock_guard<std::mutex> lk(_m_mux);
   _mux_pins[pin]._voltage = value;
   int v = dmap(value, 0.0, 5.0, 0, 1023);
-  _mux[pin] = v;
   _mux_pins[pin]._value = v;
 }
 
@@ -106,11 +104,6 @@ int _Device::get_mux_value(int pin) {
   return _mux_pins[pin]._value;
 }
 
-
-void _Device::zero_all_pins() {
-  std::lock_guard<std::mutex> lk(_m_pins);
-  std::fill(_pin_values.begin(), _pin_values.end(), 0);
-}
 
 void _Device::set_pin_mode(int pin, int mode) {
   std::lock_guard<std::mutex> lk(_m_modes);
@@ -153,7 +146,6 @@ void _Device::set_pwm_dutycycle(int pin, uint32_t a_write) {
     set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
   set_pin_state(pin, GPIO_PIN_OUTPUT_PWM);
   uint32_t high_time = _pins[pin]._pwm_period * ((float)a_write / 255.0);
-  _pwm_dutycycle[pin] = high_time;
   _pins[pin]._pwm_high_time = high_time;
 }
 
@@ -215,7 +207,7 @@ void _Device::set_tone(int pin, uint32_t freq) {
 
 void _Device::set_countdown(int pin, uint32_t d) {
   std::lock_guard<std::mutex> lk(_m_countdown);
-  _countdown[pin] = d;
+  _pins[pin]._countdown = d;
 }
 
 void _Device::set_pullup_digwrite(int pin, int value) {
@@ -236,7 +228,7 @@ bool _Device::digitalPinHasPWM(int p) {
 }
 
 bool _Device::isAnalogPin(int p) {
-  return ((p) >= 0 && (p) <= 11);
+  return (p >= 0 && p <= 11);
 }
 
 namespace _sim {

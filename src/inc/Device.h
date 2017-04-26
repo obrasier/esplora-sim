@@ -106,7 +106,6 @@ class _Device {
   int get_pin_value(int pin);
   void set_mux_voltage(int pin, double value);
   int get_mux_value(int pin);
-  void zero_all_pins();
 
   void set_tone(int pin, uint32_t value);
   // pin_mode holds the what is called to pinMode
