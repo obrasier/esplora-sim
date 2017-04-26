@@ -48,6 +48,10 @@ _Device::_Device() {
   for (const auto &elem : switches)
     set_mux_voltage(elem, 5.0);
   set_mux_voltage(CH_JOYSTICK_SW, 5.0);
+  set_mux_voltage(CH_TEMPERATURE, 0.75);
+  set_mux_voltage(CH_LIGHT, 5.0);
+  set_mux_voltage(CH_MIC, 0.0);
+
   _sim::send_pin_update();
 }
 
