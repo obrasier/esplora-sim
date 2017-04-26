@@ -34,8 +34,6 @@ _Device::_Device() {
     _pins[i]._voltage = NAN;
     if (isAnalogPin(i))
       _pins[i]._is_analog = true;
-    if (digitalPinHasPWM(i))
-      _pins[i]._is_pwm = true;
   }
   float freq;
   for (const auto &elem : _pwm_frequencies) {
@@ -193,6 +191,8 @@ uint32_t _Device::get_analog(int pin) {
   std::lock_guard<std::mutex> lk(_m_pins);
   if (pin >= 0 && pin <= 11)
     pin += 18;
+  if (isnan(_pins[pin]._voltage))
+    return rand() % 1023;
   if (_pins[pin]._is_analog)
     return dmap(_pins[pin]._voltage, 0, 5.0, 0, 1023);
   return 0;
