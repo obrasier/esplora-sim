@@ -109,7 +109,6 @@ void _Device::set_pin_mode(int pin, int mode) {
       break;
     case INPUT_PULLUP:
       _pins[pin]._state = GPIO_PIN_INPUT_UP_HIGH;
-      set_pin_state(pin, GPIO_PIN_INPUT_UP_HIGH);
       set_input(pin);
       break;
     case OUTPUT:
@@ -173,8 +172,10 @@ int _Device::get_digital(int pin) {
   std::lock_guard<std::mutex> lk(_m_pins);
   Pin p = _pins[pin];
   if (isnan(p._voltage)) {
-    if (p._mode == INPUT_PULLUP)
+    if (p._mode == INPUT_PULLUP) {
+      p._voltage = 5.0;
       return HIGH;
+    }
     else
       return (rand() % 2 == 0) ? HIGH : LOW;
   }
@@ -195,7 +196,7 @@ uint32_t _Device::get_analog(int pin) {
     return rand() % 1023;
   if (_pins[pin]._is_analog)
     return dmap(_pins[pin]._voltage, 0, 5.0, 0, 1023);
-  return 0;
+  return rand() % 1023;
 }
 
 void _Device::set_tone(int pin, uint32_t freq) {
