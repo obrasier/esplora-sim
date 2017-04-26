@@ -241,7 +241,7 @@ process_client_pins(const json_value* data) {
   int val = voltage->as.number;
   _device.set_pin_value(pin_num, val);
   char ack_json[1024];
-  snprintf(ack_json, sizeof(ack_json), "{\"id\": %d, \"v\":%.2f,", static_cast<int32_t>(pin_num), static_cast<double>(val));
+  snprintf(ack_json, sizeof(ack_json), "{\"id\": %d, \"v\":%.2f}", static_cast<int32_t>(pin_num), static_cast<double>(val));
   write_event_ack("arduino_pin", ack_json);
 }
 

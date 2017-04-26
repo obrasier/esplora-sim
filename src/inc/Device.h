@@ -50,10 +50,11 @@ struct Pin {
   bool _is_output = false;
   bool _is_analog = false;
   PinState _state = GPIO_PIN_OUTPUT_LOW;
-  uint8_t _mode = INPUT;
+  uint8_t _mode = NAN;
   float _voltage = NAN;
   bool _is_pwm = false;
-  uint32_t _dutycylce = 0;
+  uint32_t _pwm_period = 0;
+  uint32_t _pwm_high_time = 0;
   uint32_t _value = 0;
   int64_t _countdown = 0;
 };
@@ -96,9 +97,6 @@ class _Device {
   std::mutex _m_analog;
   std::mutex _m_countdown;
 
-  const uint8_t _tx = 2;
-  const int MAX_LED = 255;
-
   std::array<int, 5> _interrupt_map = {{0, 1, 2, 3, 7}};
   std::array<std::pair<int, int>, 7> _pwm_frequencies = {{ {3, 980}, {5, 490}, {6, 490}, {9,490}, {10,490}, {11,490}, {13,980} }};
 
@@ -108,8 +106,6 @@ class _Device {
   int get_pin_value(int pin);
   void set_mux_voltage(int pin, double value);
   int get_mux_value(int pin);
-  std::array<PinState, NUM_PINS> get_all_pins();
-  std::array<int, MUX_PINS> get_all_mux();
   void zero_all_pins();
 
   void set_tone(int pin, uint32_t value);
@@ -129,7 +125,6 @@ class _Device {
   void set_analog(int pin, int value);
   int get_analog(int pin);
   std::array<int, NUM_LEDS> get_all_leds();
-  void set_led(int led, uint8_t brightness);
   void increment_counter(uint32_t us);
   uint64_t get_micros();
   void start_suspend();

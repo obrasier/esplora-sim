@@ -32,9 +32,13 @@ _Device::_Device() {
   for (int i = 0; i < NUM_PINS; i++) {
     _pins[i]._pin = i + 1;
     _pins[i]._voltage = NAN;
+    if (isAnalogPin(i))
+      _pins[i]._is_analog = true;
+    if (digitalPinHasPWM(i))
+      _pins[i]._is_pwm = true;
   }
   float freq;
-  for (const auto &elem : _pwm_frequencies){
+  for (const auto &elem : _pwm_frequencies) {
     freq = (1.0 / (float)elem.second) * 1000000.0;
     set_pwm_period(elem.first, static_cast<uint32_t>(freq));
   }
@@ -53,10 +57,10 @@ void _Device::increment_counter(uint32_t us) {
   _micros_elapsed += us;
   std::lock_guard<std::mutex> lk(_m_countdown);
   for (int i = 0; i < NUM_PINS; i++) {
-    if (_countdown[i] > 0) {
-      _countdown[i] -= us;
-      if (_countdown[i] <= 0) {
-        _countdown[i] = 0;
+    if (_pins[i]._countdown > 0) {
+      _pins[i]._countdown -= us;
+      if (_pins[i]._countdown <= 0) {
+        _pins[i]._countdown = 0;
         // timer has expired on pin i
         set_tone(i, 0);
       }
@@ -71,11 +75,12 @@ uint64_t _Device::get_micros() {
 void _Device::set_pin_value(int pin, int value) {
   std::lock_guard<std::mutex> lk(_m_pins);
   int v;
-  if (pin >= 18 && isAnalogPin(pin)) {
-    v = dmap(value, 0.0, 5.0, 0, 1023);
+  v = dmap(value, 0.0, 5.0, 0, 1023);
+  _pins[pin]._voltage = value;
+  if (_pins[pin]._is_analog) {
+    _pins[pin]._value = v;
     set_analog(pin, value);
-  }
-  else {
+  } else {
     v =  (value >= 1.5) ? HIGH : LOW;
     set_digital(pin, v);
   }
@@ -90,23 +95,15 @@ int _Device::get_pin_value(int pin) {
 
 void _Device::set_mux_voltage(int pin, double value) {
   std::lock_guard<std::mutex> lk(_m_mux);
+  _mux_pins[pin]._voltage = value;
   int v = dmap(value, 0.0, 5.0, 0, 1023);
   _mux[pin] = v;
+  _mux_pins[pin]._value = v;
 }
 
 int _Device::get_mux_value(int pin) {
   std::lock_guard<std::mutex> lk(_m_mux);
-  return _mux[pin];
-}
-
-std::array<PinState, NUM_PINS> _Device::get_all_pins() {
-  std::lock_guard<std::mutex> lk(_m_pins);
-  return _pin_states;
-}
-
-std::array<int, MUX_PINS> _Device::get_all_mux() {
-  std::lock_guard<std::mutex> lk(_m_mux);
-  return _mux;
+  return _mux_pins[pin]._value;
 }
 
 
@@ -130,44 +127,43 @@ void _Device::set_pin_mode(int pin, int mode) {
     default:
       return;
   }
-  _pin_modes[pin] = mode;
+  _pins[pin]._mode = mode;
 }
 
 int _Device::get_pin_mode(int pin) {
   std::lock_guard<std::mutex> lk(_m_modes);
-  return _pin_modes[pin];
+  return _pins[pin]._mode;
 }
 
 void _Device::set_pin_state(int pin, PinState state) {
   std::lock_guard<std::mutex> lk(_m_states);
-  _pin_states[pin] = state;
+  _pins[pin]._state = state;
 }
 
 PinState _Device::get_pin_state(int pin) {
   std::lock_guard<std::mutex> lk(_m_states);
-  return _pin_states[pin];
+  return _pins[pin]._state;
 }
 
 void _Device::set_pwm_dutycycle(int pin, uint32_t a_write) {
   std::lock_guard<std::mutex> lk(_m_pwmd);
-  if (!digitalPinHasPWM(pin))
+  if (!_pins[pin]._is_pwm)
     return;
   if (a_write == 0)
     set_pin_state(pin, GPIO_PIN_OUTPUT_LOW);
   set_pin_state(pin, GPIO_PIN_OUTPUT_PWM);
-  uint32_t high_time = get_pwm_period(pin)*((float)a_write/255.0);
-  std::cout << "pwmd: " << high_time << std::endl;
+  uint32_t high_time = _pins[pin]._pwm_period * ((float)a_write / 255.0);
   _pwm_dutycycle[pin] = high_time;
+  _pins[pin]._pwm_high_time = high_time;
 }
 
 uint32_t _Device::get_pwm_dutycycle(int pin) {
   std::lock_guard<std::mutex> lk(_m_pwmd);
-  return _pwm_dutycycle[pin];
+  return _pins[pin]._pwm_high_time;
 }
 
 void _Device::set_pwm_period(int pin, uint32_t period) {
   std::lock_guard<std::mutex> lk(_m_pwmp);
-  std::cout << "pwmp: " <<  period << std::endl;
   _pwm_period[pin] = period;
 }
 
@@ -209,13 +205,10 @@ int _Device::get_analog(int pin) {
 
 void _Device::set_tone(int pin, uint32_t freq) {
   int period = 0;
-  if (freq != 0) 
-    period = 1000000/freq;
-  std::cout << period << std::endl;
+  if (freq != 0)
+    period = 1000000 / freq;
   set_pwm_period(pin, period);
-  std::cout << "set the period" << std::endl;
   set_pwm_dutycycle(pin, freq);
-  std::cout << "set the tone" << std::endl;
   _sim::send_pin_update();
 }
 
@@ -243,7 +236,6 @@ bool _Device::digitalPinHasPWM(int p) {
 }
 
 bool _Device::isAnalogPin(int p) {
-  if (p >= 18) p -= 18;
   return ((p) >= 0 && (p) <= 11);
 }
 

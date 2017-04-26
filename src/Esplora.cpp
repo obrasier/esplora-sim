@@ -56,10 +56,12 @@ _Esplora::_Esplora() {
 }
 
 int _Esplora::readSlider() {
+  _sim::increment_counter(1);
   return _sim::_device.get_mux_value(CH_SLIDER);
 }
 
 int _Esplora::readLightSensor() {
+  _sim::increment_counter(1);
   return _sim::_device.get_mux_value(CH_LIGHT);
 }
 
@@ -118,10 +120,10 @@ int _Esplora::readJoystickY() {
 }
 
 void _Esplora::writeRGB(byte red, byte green, byte blue) {
-  _sim::increment_counter(1);
   writeRed(red);
   writeGreen(green);
   writeBlue(blue);
+  _sim::increment_counter(0);
 }
 
 // writeRed calls analogWrite to write to the correct pin
