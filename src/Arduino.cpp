@@ -5,7 +5,7 @@
 #include "Arduino.h"
 #include "global_variables.h"
 
-const int sleep_period = 100;
+const int sleep_period = 100; // sleep period in milliseconds
 const int us_sleep_period = sleep_period * 1000;
 
 
