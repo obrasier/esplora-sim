@@ -64,11 +64,11 @@ int _Esplora::readLightSensor() {
 }
 
 int _Esplora::readTemperature(byte scale) {
-  float temp = _sim::_device.get_mux_value(CH_TEMPERATURE);
+  uint32_t temp = _sim::_device.get_mux_value(CH_TEMPERATURE);
   if (scale == DEGREES_F) {
-    return (int)((temp * 9) / 5) + 32;
+    return (int)((temp * 450) / 512) - 58;
   } else {
-    return (int)temp;
+    return (int)((temp * 500) / 1024) - 50;
   }
 }
 
