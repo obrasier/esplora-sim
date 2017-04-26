@@ -54,7 +54,7 @@ _Device::_Device() {
 
 void _Device::increment_counter(uint32_t us) {
   _micros_elapsed += us;
-  std::lock_guard<std::mutex> lk(_m_countdown);
+  std::lock_guard<std::mutex> lk(_m_pins);
   for (int i = 0; i < NUM_PINS; i++) {
     if (_pins[i]._countdown > 0) {
       _pins[i]._countdown -= us;
@@ -99,7 +99,7 @@ int _Device::get_mux_value(int pin) {
 
 
 void _Device::set_pin_mode(int pin, int mode) {
-  std::lock_guard<std::mutex> lk(_m_modes);
+  std::lock_guard<std::mutex> lk(_m_pins);
   switch (mode) {
     case INPUT:
       _pins[pin]._state = GPIO_PIN_INPUT_FLOATING;
@@ -121,22 +121,22 @@ void _Device::set_pin_mode(int pin, int mode) {
 }
 
 int _Device::get_pin_mode(int pin) {
-  std::lock_guard<std::mutex> lk(_m_modes);
+  std::lock_guard<std::mutex> lk(_m_pins);
   return _pins[pin]._mode;
 }
 
 void _Device::set_pin_state(int pin, PinState state) {
-  std::lock_guard<std::mutex> lk(_m_states);
+  std::lock_guard<std::mutex> lk(_m_pins);
   _pins[pin]._state = state;
 }
 
 PinState _Device::get_pin_state(int pin) {
-  std::lock_guard<std::mutex> lk(_m_states);
+  std::lock_guard<std::mutex> lk(_m_pins);
   return _pins[pin]._state;
 }
 
 void _Device::set_pwm_dutycycle(int pin, uint32_t a_write) {
-  std::lock_guard<std::mutex> lk(_m_pwmd);
+  std::lock_guard<std::mutex> lk(_m_pins);
   set_output(pin);
   _pins[pin]._is_pwm = true;
   if (a_write == 0)
@@ -148,17 +148,17 @@ void _Device::set_pwm_dutycycle(int pin, uint32_t a_write) {
 }
 
 uint32_t _Device::get_pwm_dutycycle(int pin) {
-  std::lock_guard<std::mutex> lk(_m_pwmd);
+  std::lock_guard<std::mutex> lk(_m_pins);
   return _pins[pin]._pwm_high_time;
 }
 
 void _Device::set_pwm_period(int pin, uint32_t period) {
-  std::lock_guard<std::mutex> lk(_m_pwmp);
+  std::lock_guard<std::mutex> lk(_m_pins);
   _pins[pin]._pwm_period = period;
 }
 
 uint32_t _Device::get_pwm_period(int pin) {
-  std::lock_guard<std::mutex> lk(_m_pwmp);
+  std::lock_guard<std::mutex> lk(_m_pins);
   return  _pins[pin]._pwm_period;
 }
 
@@ -186,7 +186,7 @@ int _Device::get_digital(int pin) {
 }
 
 uint32_t _Device::get_analog(int pin) {
-  std::lock_guard<std::mutex> lk(_m_analog);
+  std::lock_guard<std::mutex> lk(_m_pins);
   if (pin >= 0 && pin <= 11)
     pin += 18;
   if (_pins[pin]._is_analog)
@@ -205,11 +205,12 @@ void _Device::set_tone(int pin, uint32_t freq) {
 
 
 void _Device::set_countdown(int pin, uint32_t d) {
-  std::lock_guard<std::mutex> lk(_m_countdown);
+  std::lock_guard<std::mutex> lk(_m_pins);
   _pins[pin]._countdown = d;
 }
 
 void _Device::set_pullup_digwrite(int pin, int value) {
+  std::lock_guard<std::mutex> lk(_m_pins);
   PinState state = _pins[pin]._state;
   if (value == HIGH) {
     // enable pullup

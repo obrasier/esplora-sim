@@ -78,16 +78,8 @@ class _Device {
 
   std::array<void (*)(void), 5> _isr_table;
 
-  std::mutex _m_device;
   std::mutex _m_pins;
-  std::mutex _m_modes;
-  std::mutex _m_states;
-  std::mutex _m_leds;
   std::mutex _m_mux;
-  std::mutex _m_pwmp;
-  std::mutex _m_pwmd;
-  std::mutex _m_analog;
-  std::mutex _m_countdown;
 
   std::array<int, 5> _interrupt_map = {{0, 1, 2, 3, 7}};
   std::array<std::pair<int, int>, 7> _pwm_frequencies = {{ {3, 980}, {5, 490}, {6, 490}, {9,490}, {10,490}, {11,490}, {13,980} }};
