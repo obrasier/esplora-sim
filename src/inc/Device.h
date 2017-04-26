@@ -73,19 +73,6 @@ class _Device {
 
   std::atomic<uint64_t> _micros_elapsed;
 
-  std::array<int, NUM_PINS> _pin_values;
-  std::array<PinState, NUM_PINS> _pin_states;
-  std::array<int, NUM_PINS> _pin_modes;
-  std::array<int, NUM_LEDS> _led_values;
-  std::array<int, NUM_PINS> _pwm_dutycycle;
-  std::array<uint32_t, NUM_PINS> _pwm_period;
-  std::array<int, MUX_PINS> _mux;
-
-  std::array<uint, NUM_ANALOG_PINS> _analog_values;
-  std::array<uint, NUM_PINS> _digital_values;
-
-  std::array<int, NUM_PINS> _countdown;
-
   std::array<Pin, NUM_PINS> _pins;
   std::array<MPin, MUX_PINS> _mux_pins;
 
