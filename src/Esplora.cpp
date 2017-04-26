@@ -80,12 +80,12 @@ int _Esplora::readMicrophone() {
 }
 
 int _Esplora::readJoystickSwitch() {
-  _sim::increment_counter(1);
+  _sim::increment_counter(5);
   return _sim::_device.get_mux_value(CH_JOYSTICK_SW);
 }
 
 int _Esplora::readJoystickButton() {
-  _sim::increment_counter(1);
+  _sim::increment_counter(7);
   return (_sim::_device.get_mux_value(CH_JOYSTICK_SW) == 1023) ? HIGH : LOW;
 }
 

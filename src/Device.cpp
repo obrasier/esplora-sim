@@ -30,11 +30,16 @@ _Device::_Device() {
   _micros_elapsed = 0;
 
   for (int i = 0; i < NUM_PINS; i++) {
-    _pins[i]._pin = i + 1;
+    _pins[i]._pin = i;
     _pins[i]._voltage = NAN;
     if (isAnalogPin(i))
       _pins[i]._is_analog = true;
+    // accelerometer pins
+    if (i == 23 || i == 29 || i == 24)
+      _pins[i]._voltage = 2.5;
   }
+
+  // set pwm dutycycles
   float freq;
   for (const auto &elem : _pwm_frequencies) {
     freq = (1.0 / static_cast<float>(elem.second)) * 1000000.0;
