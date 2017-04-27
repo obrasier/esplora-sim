@@ -63,8 +63,6 @@ void analogReference(uint8_t mode __attribute__((unused))) {
 
 //------ Advanced I/O ----------------------
 void tone(unsigned int pin, unsigned int freq) {
-  if (pin > NUM_PINS)
-    return;
   if (!_sim::_device.digitalPinHasPWM(pin))
     return;
   pinMode(pin, OUTPUT);
@@ -73,7 +71,7 @@ void tone(unsigned int pin, unsigned int freq) {
 }
 
 void tone(unsigned int pin, unsigned int freq, unsigned long duration) {
-  if (pin > NUM_PINS)
+  if (!_sim::_device.digitalPinHasPWM(pin))
     return;
   tone(pin, freq);
   // _sim::_Later turn_off_tone(duration, true, &noTone, pin);

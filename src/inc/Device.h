@@ -80,6 +80,7 @@ class _Device {
 
   std::mutex _m_pins;
   std::mutex _m_mux;
+  std::mutex _m_countdown;
 
   std::array<int, 5> _interrupt_map = {{0, 1, 2, 3, 7}};
   std::array<std::pair<int, int>, 7> _pwm_frequencies = {{ {3, 980}, {5, 490}, {6, 490}, {9,490}, {10,490}, {11,490}, {13,980} }};

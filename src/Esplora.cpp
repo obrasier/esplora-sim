@@ -111,12 +111,12 @@ int _Esplora::readButton(byte button) {
 
 int _Esplora::readJoystickX() {
   _sim::increment_counter(1);
-  return _sim::_device.get_mux_value(CH_JOYSTICK_X);
+  return _sim::_device.get_mux_value(CH_JOYSTICK_X) - 512;
 }
 
 int _Esplora::readJoystickY() {
   _sim::increment_counter(1);
-  return _sim::_device.get_mux_value(CH_JOYSTICK_Y);
+  return _sim::_device.get_mux_value(CH_JOYSTICK_Y) - 512;
 }
 
 void _Esplora::writeRGB(byte red, byte green, byte blue) {

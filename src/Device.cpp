@@ -21,12 +21,11 @@
 #include <iostream>
 
 
-double dmap(double x, double x1, double x2, double y1, double y2) {
-  return (x - x1) * (y2 - y1) / (x2 - x1) + y1;
+double dmap(double val, double x1, double x2, double y1, double y2) {
+  return (val - x1) * (y2 - y1) / (x2 - x1) + y1;
 }
 
 _Device::_Device() {
-  _sim::send_pin_update();
   _micros_elapsed = 0;
 
   for (int i = 0; i < NUM_PINS; i++) {
@@ -54,14 +53,12 @@ _Device::_Device() {
   set_mux_voltage(CH_TEMPERATURE, 0.75);
   set_mux_voltage(CH_LIGHT, 5.0);
   set_mux_voltage(CH_MIC, 0.0);
-
-  _sim::send_pin_update();
 }
 
 
 void _Device::increment_counter(uint32_t us) {
   _micros_elapsed += us;
-  std::lock_guard<std::mutex> lk(_m_pins);
+  std::lock_guard<std::mutex> lk(_m_countdown);
   for (int i = 0; i < NUM_PINS; i++) {
     if (_pins[i]._countdown > 0) {
       _pins[i]._countdown -= us;
@@ -198,10 +195,10 @@ uint32_t _Device::get_analog(int pin) {
   if (pin >= 0 && pin <= 11)
     pin += 18;
   if (isnan(_pins[pin]._voltage))
-    return rand() % 1023;
+    return rand() % 1024;
   if (_pins[pin]._is_analog)
     return dmap(_pins[pin]._voltage, 0, 5.0, 0, 1023);
-  return rand() % 1023;
+  return rand() % 1024;
 }
 
 void _Device::set_tone(int pin, uint32_t freq) {
@@ -215,7 +212,7 @@ void _Device::set_tone(int pin, uint32_t freq) {
 
 
 void _Device::set_countdown(int pin, uint32_t d) {
-  std::lock_guard<std::mutex> lk(_m_pins);
+  std::lock_guard<std::mutex> lk(_m_countdown);
   _pins[pin]._countdown = d;
 }
 
