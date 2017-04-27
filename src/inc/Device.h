@@ -62,6 +62,7 @@ struct Pin {
   uint32_t _pwm_period = 0;
   uint32_t _pwm_high_time = 0;
   int64_t _countdown = 0;
+  bool _is_tone = false;
 };
 
 
@@ -98,6 +99,7 @@ class _Device {
   double get_mux_voltage(int pin);
 
   void set_tone(int pin, uint32_t value);
+  bool is_tone(int pin);
   // pin_mode holds the what is called to pinMode
   void set_pin_mode(int pin, int mode);
   int get_pin_mode(int pin);
@@ -105,10 +107,13 @@ class _Device {
   // pin_state holds the pin_state for the marker
   void set_pin_state(int pin, PinState state);
   PinState get_pin_state(int pin);
+
   void set_pwm_dutycycle(int pin, uint32_t dutycycle);
   uint32_t get_pwm_dutycycle(int pin);
   void set_pwm_period(int pin, uint32_t period);
   uint32_t get_pwm_period(int pin);
+  void default_pwm_period(int pin);
+
   void set_digital(int pin, int level);
   int get_digital(int pin);
   uint32_t get_analog(int pin);

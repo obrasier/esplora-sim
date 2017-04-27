@@ -38,13 +38,6 @@ _Device::_Device() {
       _pins[i]._voltage = 2.5;
   }
 
-  // set pwm dutycycles
-  float freq;
-  for (const auto &elem : _pwm_frequencies) {
-    freq = (1.0 / static_cast<float>(elem.second)) * 1000000.0;
-    set_pwm_period(elem.first, static_cast<uint32_t>(freq));
-  }
-
   std::array<int, 4> switches {{ CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4 }};
   // set switches to be high (active low)
   for (const auto &elem : switches)
@@ -141,11 +134,14 @@ PinState _Device::get_pin_state(int pin) {
 void _Device::set_pwm_dutycycle(int pin, uint32_t a_write) {
   std::lock_guard<std::mutex> lk(_m_pins);
   set_output(pin);
-  _pins[pin]._is_pwm = true;
-  if (a_write == 0)
+  if (a_write == 0) {
     _pins[pin]._state = GPIO_PIN_OUTPUT_LOW;
-  else
+    _pins[pin]._pwm_period = 0;
+    _pins[pin]._pwm_high_time = 0;
+  } else {
+    _pins[pin]._is_pwm = true;
     _pins[pin]._state = GPIO_PIN_OUTPUT_PWM;
+  }
   uint32_t high_time = _pins[pin]._pwm_period * ((float)a_write / 255.0);
   _pins[pin]._pwm_high_time = high_time;
 }
@@ -165,6 +161,15 @@ uint32_t _Device::get_pwm_period(int pin) {
   return  _pins[pin]._pwm_period;
 }
 
+void _Device::default_pwm_period(int pin) {
+  for (auto const& elem : _pwm_frequencies) {
+    if (elem.first == pin) {
+      float freq = (1.0 / static_cast<float>(elem.second)) * 1000000.0;
+      set_pwm_period(pin, static_cast<uint32_t>(freq));
+    }
+  }
+}
+
 void _Device::set_digital(int pin, int level) {
   std::lock_guard<std::mutex> lk(_m_pins);
   _pins[pin]._state = (level == LOW) ? GPIO_PIN_OUTPUT_LOW : GPIO_PIN_OUTPUT_HIGH;
@@ -177,8 +182,7 @@ int _Device::get_digital(int pin) {
     if (p._mode == INPUT_PULLUP) {
       p._voltage = 5.0;
       return HIGH;
-    }
-    else
+    } else
       return (rand() % 2 == 0) ? HIGH : LOW;
   }
   if (p._mode == INPUT)
@@ -202,14 +206,25 @@ uint32_t _Device::get_analog(int pin) {
 }
 
 void _Device::set_tone(int pin, uint32_t freq) {
-  int period = 0;
-  if (freq != 0)
+  uint32_t period = 0;
+  _m_pins.lock();
+  if (freq != 0) {
     period = 1000000 / freq;
+    _pins[pin]._is_tone = true;
+  }
+  else {
+    _pins[pin]._is_tone = false;
+  }
+  _m_pins.unlock();
   set_pwm_period(pin, period);
   set_pwm_dutycycle(pin, freq);
   _sim::send_pin_update();
 }
 
+bool _Device::is_tone(int pin) {
+  std::lock_guard<std::mutex> lk(_m_pins);
+  return _pins[pin]._is_tone;
+}
 
 void _Device::set_countdown(int pin, uint32_t d) {
   std::lock_guard<std::mutex> lk(_m_countdown);
@@ -230,11 +245,11 @@ void _Device::set_pullup_digwrite(int pin, int value) {
 }
 
 bool _Device::digitalPinHasPWM(int p) {
-  return ((p) == 3 || (p) == 5 || (p) == 6 || (p) == 9 || (p) == 10 || (p) == 11 || (p) == 13);
+  return (p == 3 || p == 5 || p == 6 || p == 9 || p == 10 || p == 11 || p == 13);
 }
 
 bool _Device::isAnalogPin(int p) {
-  return (p >= 0 && p <= 11);
+  return (p >= A0 && p <= A11);
 }
 
 void _Device::set_input(int pin) {

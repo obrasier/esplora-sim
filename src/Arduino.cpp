@@ -1,7 +1,4 @@
 #include <iostream>
-#include <atomic>
-#include <condition_variable>
-#include <mutex>
 #include "Arduino.h"
 #include "global_variables.h"
 
@@ -47,6 +44,7 @@ void analogWrite(int pin, byte value) {
     digitalWrite(pin, HIGH);
   else {
     _sim::_device.set_pwm_dutycycle(pin, value);
+    _sim::_device.default_pwm_period(pin);
     _sim::increment_counter(1);
   }
 }
