@@ -92,9 +92,9 @@ int _Esplora::readJoystickButton() {
 int _Esplora::readAccelerometer(byte axis) {
   _sim::increment_counter(1);
   switch (axis) {
-    case X_AXIS: return analogRead(ACCEL_X_PIN) - 512; 
-    case Y_AXIS: return analogRead(ACCEL_Y_PIN) - 512;
-    case Z_AXIS: return analogRead(ACCEL_Z_PIN) - 512;
+    case X_AXIS: return analogRead(ACCEL_X_PIN) - 511; 
+    case Y_AXIS: return analogRead(ACCEL_Y_PIN) - 511;
+    case Z_AXIS: return analogRead(ACCEL_Z_PIN) - 511;
     default: return 0;
   }
 }
@@ -111,19 +111,18 @@ int _Esplora::readButton(byte button) {
 
 int _Esplora::readJoystickX() {
   _sim::increment_counter(1);
-  return _sim::_device.get_mux_value(CH_JOYSTICK_X) - 512;
+  return _sim::_device.get_mux_value(CH_JOYSTICK_X) - 511;
 }
 
 int _Esplora::readJoystickY() {
   _sim::increment_counter(1);
-  return _sim::_device.get_mux_value(CH_JOYSTICK_Y) - 512;
+  return _sim::_device.get_mux_value(CH_JOYSTICK_Y) - 511;
 }
 
 void _Esplora::writeRGB(byte red, byte green, byte blue) {
   writeRed(red);
   writeGreen(green);
   writeBlue(blue);
-  _sim::increment_counter(0);
 }
 
 // writeRed calls analogWrite to write to the correct pin

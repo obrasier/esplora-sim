@@ -34,8 +34,9 @@ _Device::_Device() {
     if (isAnalogPin(i))
       _pins[i]._is_analog = true;
     // accelerometer pins
-    if (i == 23 || i == 29 || i == 24)
+    if (i == 23 || i == 29 || i == 24) {
       _pins[i]._voltage = 2.5;
+    }
   }
 
   std::array<int, 4> switches {{ CH_SWITCH_1, CH_SWITCH_2, CH_SWITCH_3, CH_SWITCH_4 }};
