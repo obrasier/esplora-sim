@@ -283,7 +283,6 @@ process_client_json(const json_value* json) {
         fprintf(stderr, "Unknown event type: %s\n", event_type->as.string);
       }
       char msg_text[120];
-      std::cout << msg_text << std::endl;
       sprintf(msg_text, "event type: %s", event_type->as.string);
     }
     event = event->next;

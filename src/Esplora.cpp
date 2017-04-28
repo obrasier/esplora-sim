@@ -175,7 +175,6 @@ void _Esplora::tone(unsigned int freq) {
   }
 }
 
-// TODO: implement duration timeout
 void _Esplora::tone(unsigned int freq, unsigned long duration) {
   if (freq > 0 && duration > 0) {
     ::tone(BUZZER_PIN, freq, duration);

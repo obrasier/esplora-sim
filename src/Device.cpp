@@ -92,7 +92,7 @@ double _Device::get_mux_voltage(int pin) {
 
 int _Device::get_mux_value(int pin) {
   std::lock_guard<std::mutex> lk(_m_mux);
-  return dmap(_mux_pins[pin]._voltage, 0, 5.0, 0, 1023);
+  return round(dmap(_mux_pins[pin]._voltage, 0, 5.0, 0, 1023));
 }
 
 
