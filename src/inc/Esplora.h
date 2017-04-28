@@ -7,6 +7,8 @@
  * method.
  */
 
+const byte JOYSTICK_BASE  = 16;
+
 const byte CH_SWITCH_1    = 0;
 const byte CH_SWITCH_2    = 1;
 const byte CH_SWITCH_3    = 2;
@@ -35,6 +37,11 @@ const byte SWITCH_RIGHT   = SWITCH_4;
 const boolean PRESSED     = LOW;
 const boolean RELEASED    = HIGH;
 
+const byte JOYSTICK_DOWN  = JOYSTICK_BASE;
+const byte JOYSTICK_LEFT  = JOYSTICK_BASE+1;
+const byte JOYSTICK_UP    = JOYSTICK_BASE+2;
+const byte JOYSTICK_RIGHT = JOYSTICK_BASE+3;
+
 /*
  * The following constants can be used with the readTemperature()
  * method to specify the desired scale.
@@ -52,11 +59,6 @@ const byte Z_AXIS = 2;
 
 typedef uint8_t byte;
 
-
-// extern void tone(unsigned int pin, unsigned int freq);
-// extern void tone(unsigned int pin, unsigned int freq, unsigned long duration);
-// extern void noTone(unsigned int pin);
-
 class _Esplora {
 private:
   byte lastRed;
@@ -72,7 +74,9 @@ public:
   int readJoystickSwitch();
   int readJoystickButton();
   int readAccelerometer(byte axis);
-  int readButton(byte button);
+  bool joyLowHalf(byte joyCh);
+  bool joyHighHalf(byte joyCh);
+  bool readButton(byte button);
   int readJoystickX();
   int readJoystickY();
   void writeRGB(byte red, byte green, byte blue);
