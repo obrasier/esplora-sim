@@ -129,23 +129,23 @@ list_to_json(const char* field, char** json_ptr, char* json_end, int* values, si
 
 void send_pin_update() {
   static int prev_pins[NUM_PINS] = {0};
-  static int prev_pwm_dutycycle[NUM_PINS] = {0};
+  static int prev_pwm_high_time[NUM_PINS] = {0};
   static int prev_pwm_period[NUM_PINS] = {0};
   if (!send_updates)
     return;
   int pins[NUM_PINS];
-  int pwm_dutycycle[NUM_PINS] = {0};
+  int pwm_high_time[NUM_PINS] = {0};
   int pwm_period[NUM_PINS] = {0};
   for (int i = 0; i < NUM_PINS; i++) {
     pins[i] = _device.get_pin_state(i);
     if (pins[i] == GPIO_PIN_OUTPUT_PWM)
-      pwm_dutycycle[i] = _device.get_pwm_dutycycle(i);
+      pwm_high_time[i] = _device.get_pwm_high_time(i);
       pwm_period[i] = _device.get_pwm_period(i);
   }
 
   if (memcmp(pins, prev_pins, sizeof(prev_pins)) != 0 ||
       memcmp(pwm_period, prev_pwm_period, sizeof(prev_pwm_period)) != 0 ||
-      memcmp(pwm_dutycycle, prev_pwm_dutycycle, sizeof(prev_pwm_dutycycle)) != 0 ) {
+      memcmp(pwm_high_time, prev_pwm_high_time, sizeof(prev_pwm_high_time)) != 0 ) {
     // pin states have changed
     char json[1024];
     char* json_ptr = json;
@@ -156,7 +156,7 @@ void send_pin_update() {
     list_to_json("p", &json_ptr, json_end, pins, sizeof(pins) / sizeof(int));
     appendf(&json_ptr, json_end, ", ");
 
-    list_to_json("pwmd", &json_ptr, json_end, pwm_dutycycle, sizeof(pwm_dutycycle) / sizeof(int));
+    list_to_json("pwmd", &json_ptr, json_end, pwm_high_time, sizeof(pwm_high_time) / sizeof(int));
     appendf(&json_ptr, json_end, ", ");
 
     list_to_json("pwmp", &json_ptr, json_end, pwm_period, sizeof(pwm_period) / sizeof(int));
@@ -165,7 +165,7 @@ void send_pin_update() {
     write_to_updates(json, json_ptr - json);
 
     memcpy(prev_pins, pins, sizeof(pins));
-    memcpy(prev_pwm_dutycycle, pwm_dutycycle, sizeof(pwm_dutycycle));
+    memcpy(prev_pwm_high_time, pwm_high_time, sizeof(pwm_high_time));
     memcpy(prev_pwm_period, pwm_period, sizeof(pwm_period));
   }
 }

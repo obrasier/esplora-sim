@@ -132,7 +132,7 @@ PinState _Device::get_pin_state(int pin) {
   return _pins[pin]._state;
 }
 
-void _Device::set_pwm_dutycycle(int pin, uint32_t a_write) {
+void _Device::set_pwm_high_time(int pin, uint32_t a_write) {
   std::lock_guard<std::mutex> lk(_m_pins);
   set_output(pin);
   if (a_write == 0) {
@@ -147,7 +147,7 @@ void _Device::set_pwm_dutycycle(int pin, uint32_t a_write) {
   _pins[pin]._pwm_high_time = high_time;
 }
 
-uint32_t _Device::get_pwm_dutycycle(int pin) {
+uint32_t _Device::get_pwm_high_time(int pin) {
   std::lock_guard<std::mutex> lk(_m_pins);
   return _pins[pin]._pwm_high_time;
 }
@@ -172,6 +172,7 @@ void _Device::default_pwm_period(int pin) {
 }
 
 void _Device::set_digital(int pin, int level) {
+  set_output(pin);
   std::lock_guard<std::mutex> lk(_m_pins);
   _pins[pin]._state = (level == LOW) ? GPIO_PIN_OUTPUT_LOW : GPIO_PIN_OUTPUT_HIGH;
 }
@@ -218,7 +219,7 @@ void _Device::set_tone(int pin, uint32_t freq) {
   }
   _m_pins.unlock();
   set_pwm_period(pin, period);
-  set_pwm_dutycycle(pin, freq);
+  set_pwm_high_time(pin, freq);
   _sim::send_pin_update();
 }
 

@@ -108,8 +108,8 @@ class _Device {
   void set_pin_state(int pin, PinState state);
   PinState get_pin_state(int pin);
 
-  void set_pwm_dutycycle(int pin, uint32_t dutycycle);
-  uint32_t get_pwm_dutycycle(int pin);
+  void set_pwm_high_time(int pin, uint32_t dutycycle);
+  uint32_t get_pwm_high_time(int pin);
   void set_pwm_period(int pin, uint32_t period);
   uint32_t get_pwm_period(int pin);
   void default_pwm_period(int pin);
