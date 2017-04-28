@@ -43,8 +43,8 @@ void analogWrite(int pin, byte value) {
   else if (value == 255)
     digitalWrite(pin, HIGH);
   else {
-    _sim::_device.set_pwm_dutycycle(pin, value);
     _sim::_device.default_pwm_period(pin);
+    _sim::_device.set_pwm_dutycycle(pin, value);
     _sim::increment_counter(1);
   }
 }

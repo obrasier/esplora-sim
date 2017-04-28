@@ -182,8 +182,6 @@ write_event_ack(const char* event_type, const char* ack_data_json) {
           "[{ \"type\": \"arduino_ack\", \"ticks\": %d, \"data\": { \"type\": \"%s\", \"data\": "
           "%s }}]\n",
           get_elapsed_micros(), event_type, ack_data_json ? ack_data_json : "{}");
-
-  // std::cout << json << std::endl;
   write_to_updates(json, json_ptr - json);
 }
 
