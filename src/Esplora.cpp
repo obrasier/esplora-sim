@@ -45,6 +45,8 @@ const byte ACCEL_X_PIN = A5;
 const byte ACCEL_Y_PIN = A11;
 const byte ACCEL_Z_PIN = A6;
 
+
+const int JOYSTICK_DEAD_ZONE = 100;
 //==========================================
 // Esplora
 //==========================================
@@ -99,11 +101,31 @@ int _Esplora::readAccelerometer(byte axis) {
   }
 }
 
-int _Esplora::readButton(byte button) {
+bool _Esplora::joyLowHalf(byte joyCh) {
+  return (_sim::_device.get_mux_value(joyCh) < 512 - JOYSTICK_DEAD_ZONE)
+    ? LOW : HIGH;
+}
+
+bool _Esplora::joyHighHalf(byte joyCh) {
+  return (_sim::_device.get_mux_value(joyCh) > 512 + JOYSTICK_DEAD_ZONE)
+    ? LOW : HIGH;
+}
+
+bool _Esplora::readButton(byte button) {
   if (button >= SWITCH_1 && button <= SWITCH_4) {
     button--;
   } else {
     return HIGH;
+  }
+  switch(button) {
+  case JOYSTICK_RIGHT:
+    return joyLowHalf(CH_JOYSTICK_X);
+  case JOYSTICK_LEFT:
+    return joyHighHalf(CH_JOYSTICK_X);
+  case JOYSTICK_UP:
+    return joyLowHalf(CH_JOYSTICK_Y);
+  case JOYSTICK_DOWN:
+    return joyHighHalf(CH_JOYSTICK_Y);
   }
   _sim::increment_counter(1);
   return (_sim::_device.get_mux_value(button) > 512) ? HIGH : LOW;
