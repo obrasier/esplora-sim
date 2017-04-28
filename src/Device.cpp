@@ -202,7 +202,7 @@ uint32_t _Device::get_analog(int pin) {
   if (isnan(_pins[pin]._voltage))
     return rand() % 1024;
   if (_pins[pin]._is_analog)
-    return dmap(_pins[pin]._voltage, 0, 5.0, 0, 1023);
+    return round(dmap(_pins[pin]._voltage, 0, 5.0, 0, 1023));
   return rand() % 1024;
 }
 

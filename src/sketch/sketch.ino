@@ -10,7 +10,7 @@ void loop() {
     Esplora.writeRGB(0, 0, 0);
   }
   Esplora.tone(500, 1000);
-  int x = Esplora.readAccelerometer(X_AXIS);
+  int x = Esplora.readLightSensor();
   Serial.println(x);
   delay(2000);
 }

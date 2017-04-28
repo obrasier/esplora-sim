@@ -94,7 +94,7 @@ get_elapsed_micros() {
 void
 write_to_updates(const void* buf, size_t count) {
   write(updates_fd, buf, count);
-  std::this_thread::sleep_for(std::chrono::microseconds(5));
+  // std::this_thread::sleep_for(std::chrono::microseconds(5));
 }
 
 
@@ -163,7 +163,6 @@ void send_pin_update() {
     appendf(&json_ptr, json_end, "}}]\n");
 
     write_to_updates(json, json_ptr - json);
-    std::cout << json << std::endl;
 
     memcpy(prev_pins, pins, sizeof(pins));
     memcpy(prev_pwm_dutycycle, pwm_dutycycle, sizeof(pwm_dutycycle));
