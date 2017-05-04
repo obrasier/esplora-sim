@@ -1,6 +1,7 @@
+#include "program.h"
 #include <Esplora.h>
 void setup() {}
-int count = 0;
+int16_t count = 0;
 
 void loop() {
   if (Esplora.readButton(1) == LOW) {
@@ -9,13 +10,13 @@ void loop() {
   else {
     Esplora.writeRGB(0, 0, 0);
   }
-  int x = my_func();
+  int16_t x = my_func();
   Serial.println(x);
   delay(2000);
 
 }
 
-int my_func () {
+int16_t my_func () {
   return 4;
 }
 
