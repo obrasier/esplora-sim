@@ -2,6 +2,7 @@
 #define ESPLORA_H_ 
 
 #include "Arduino.h"
+#include "Serial.h"
 /*
  * The following constants can be used with the readButton()
  * method.

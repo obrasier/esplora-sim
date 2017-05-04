@@ -133,8 +133,8 @@ void increment_counter(int us);
 }
 
 
-// in sketch.ino
-void setup();
-void loop();
+// // in sketch.ino
+// void setup();
+// void loop();
 
 #endif
