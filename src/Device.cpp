@@ -19,7 +19,7 @@
 #include "global_variables.h"
 
 #include <iostream>
-
+#include <cmath>
 
 double dmap(double val, double x1, double x2, double y1, double y2) {
   return (val - x1) * (y2 - y1) / (x2 - x1) + y1;
@@ -180,7 +180,7 @@ void _Device::set_digital(int pin, int level) {
 int _Device::get_digital(int pin) {
   std::lock_guard<std::mutex> lk(_m_pins);
   Pin p = _pins[pin];
-  if (isnan(p._voltage)) {
+  if (std::isnan(p._voltage)) {
     if (p._mode == INPUT_PULLUP) {
       p._voltage = 5.0;
       return HIGH;
@@ -200,7 +200,7 @@ uint32_t _Device::get_analog(int pin) {
   std::lock_guard<std::mutex> lk(_m_pins);
   if (pin >= 0 && pin <= 11)
     pin += 18;
-  if (isnan(_pins[pin]._voltage))
+  if (std::isnan(_pins[pin]._voltage))
     return rand() % 1024;
   if (_pins[pin]._is_analog)
     return round(dmap(_pins[pin]._voltage, 0, 5.0, 0, 1023));

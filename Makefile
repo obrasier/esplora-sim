@@ -1,10 +1,13 @@
 CC=clang
 CXX = clang++
-CXX_FLAGS = -fsanitize=address -std=c++11 -Wfatal-errors -Wall -Wextra -Wpedantic -Wshadow -W -pedantic -Wno-reserved-id-macro -Wno-keyword-macro
+ARCHFLAGS ?=
+CFLAGS =
+CXXFLAGS = -std=c++11 -Wfatal-errors -Wall -Wextra -Wpedantic -Wshadow -W -pedantic -Wno-reserved-id-macro -Wno-keyword-macro
+LDFLAGS = -latomic -lpthread -lm
 INC=-I./src/inc/json -I./src/inc -I./src/json -I./src/sketch -I./src
 
 # Final binary
-BIN = esplora_sim
+BIN = esplora-sim
 # Put all auto generated stuff to this build dir.
 BUILD_DIR = ./build
 
@@ -28,7 +31,7 @@ $(BIN) : $(BUILD_DIR)/$(BIN)
 # Create build directories - same structure as sources.
 $(BUILD_DIR)/$(BIN) : $(OBJ) $(JOBJ)
 	mkdir -p $(@D)
-	$(CXX) $(CXX_FLAGS) $^ -o $@
+	$(CXX) $(ARCHFLAGS) $(LDFLAGS) $(CXXFLAGS) $^ -o $@
 
 # Include all .d files
 -include $(DEP)
@@ -40,11 +43,11 @@ $(BUILD_DIR)/$(BIN) : $(OBJ) $(JOBJ)
 # the same name as the .o file.
 $(BUILD_DIR)/%.o : %.cpp
 	mkdir -p $(@D)
-	$(CXX) $(CXX_FLAGS) $(INC) -MMD -c $< -o $@
+	$(CXX) $(ARCHFLAGS) $(CXXFLAGS) $(INC) -MMD -c $< -o $@
 
 $(BUILD_DIR)/%.o : %.c
 	mkdir -p $(@D)
-	$(CC) $(INC) -MMD -c $< -o $@
+	$(CC) $(ARCHFLAGS) $(CFLAGS) $(INC) -MMD -c $< -o $@
 
 
 
