@@ -43,32 +43,6 @@ typedef bool boolean;
 // WCharacter uses boolean
 #include "WCharacter.h"
 
-// Class to run code after n milliseconds, used for the tone duration timer
-// Arguments:
-//    int - milliseconds until code is run
-//    bool - if true, spawns a new thread and continues executing code
-//    variable arguments (what you feed into std::bind)
-
-namespace _sim {
-class _Later {
- public:
-  template <class callable, class... arguments>
-  _Later(int after, bool async, callable&& f, arguments&&... args) {
-    std::function<typename std::result_of<callable(arguments...)>::type()> task(std::bind(std::forward<callable>(f), std::forward<arguments>(args)...));
-
-    if (async) {
-      std::thread([after, task]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(after));
-        task();
-      }).detach();
-    } else {
-      std::this_thread::sleep_for(std::chrono::milliseconds(after));
-      task();
-    }
-  }
-};
-} // namespace
-
 void pinMode(int pin, int mode);
 void digitalWrite(int pin, byte value);
 int digitalRead(int pin);
@@ -106,12 +80,7 @@ void noInterrupts();
 #define digitalPinToPCMSK(p)    ((((p) >= 8 && (p) <= 11) || ((p) >= 14 && (p) <= 17) || ((p) >= A8 && (p) <= A10)) ? (&PCMSK0) : ((uint8_t *)0))
 #define digitalPinToPCMSKbit(p) {(((p) >= 8 && (p) <= 11) ? (p) - 4 : ((p) == 14 ? 3 : ((p) == 15 ? 1 : ((p) == 16 ? 2 : ((p) == 17 ? 0 : (p - A8 + 4))))))}
 
-
-
-
-
 #define digitalPinToInterrupt(p) ((p) == 0 ? 2 : ((p) == 1 ? 3 : ((p) == 2 ? 1 : ((p) == 3 ? 0 : ((p) == 7 ? 4 : NOT_AN_INTERRUPT)))))
-
 
 #define clockCyclesPerMicrosecond() ( F_CPU / 1000000L )
 #define clockCyclesToMicroseconds(a) ( ((a) * 1000L) / (F_CPU / 1000L) )

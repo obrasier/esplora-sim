@@ -1,2 +1,2 @@
-#include <stdint.h>
-int16_t my_func ();
+#include "Arduino.h"
+int32_t my_func();

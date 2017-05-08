@@ -10,12 +10,13 @@ void loop() {
     Esplora.writeRGB(0, 0, 0);
   }
   int x = my_func();
+  unsigned                   int x = 3;
   Serial.println(x);
   delay(2000);
 
 }
 
-int my_func () {
+long my_func() {
   return 4;
 }
 
