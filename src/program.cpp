@@ -9,14 +9,8 @@ void loop() {
   else {
     Esplora.writeRGB(0, 0, 0);
   }
-  int16_t x = my_func();
-  uint16_t x = 3;
+  int16_t x = 3;
   Serial.println(x);
   delay(2000);
 
 }
-
-int32_t my_func() {
-  return 4;
-}
-
