@@ -1,4 +1,3 @@
-#include "program.h"
 #include <Esplora.h>
 void setup() {}
 int16_t count = 0;
@@ -11,12 +10,13 @@ void loop() {
     Esplora.writeRGB(0, 0, 0);
   }
   int16_t x = my_func();
+  uint16_t x = 3;
   Serial.println(x);
   delay(2000);
 
 }
 
-int16_t my_func () {
+int32_t my_func() {
   return 4;
 }
 

@@ -1,2 +1,2 @@
 #!/bin/bash
-env PATH=${PATH}:`pwd`/build ./src/utils/gui.py
+env PATH=${PATH}:`pwd` ./src/utils/gui.py
