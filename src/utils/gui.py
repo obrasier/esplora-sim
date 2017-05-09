@@ -43,7 +43,7 @@ class MicrobitSimulator(object):
           'PATH': os.getenv('PATH'),
       }
       # Expect to find microbit-micropython on PATH.
-      cmds = ['esplora_sim']
+      cmds = ['esplora-sim']
       if self._program_path:
         if self._interactive:
           cmds.append('-i')
