@@ -150,7 +150,7 @@ void send_pin_update() {
     char json[1024];
     char* json_ptr = json;
     char* json_end = json + sizeof(json);
-    appendf(&json_ptr, json_end, "[{ \"type\": \"arduino_pins\", \"ticks\": %d, \"data\": {",
+    appendf(&json_ptr, json_end, "[{ \"type\": \"arduino_pins\", \"ticks\": %" PRIu64 ", \"data\": {",
             get_elapsed_micros());
 
     list_to_json("p", &json_ptr, json_end, pins, sizeof(pins) / sizeof(int));
@@ -179,7 +179,7 @@ write_event_ack(const char* event_type, const char* ack_data_json) {
   char* json_end = json + sizeof(json);
 
   appendf(&json_ptr, json_end,
-          "[{ \"type\": \"arduino_ack\", \"ticks\": %d, \"data\": { \"type\": \"%s\", \"data\": "
+          "[{ \"type\": \"arduino_ack\", \"ticks\": %" PRIu64 ", \"data\": { \"type\": \"%s\", \"data\": "
           "%s }}]\n",
           get_elapsed_micros(), event_type, ack_data_json ? ack_data_json : "{}");
   write_to_updates(json, json_ptr - json);
@@ -315,7 +315,6 @@ process_client_event(int fd) {
     }
     line_start = line_end + 1;
   }
-  write_event_ack("arduino_event", nullptr);
 }
 
 
