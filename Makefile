@@ -2,7 +2,7 @@ CC=clang
 CXX = clang++
 ARCHFLAGS ?=
 CFLAGS =
-CXXFLAGS = -std=c++11 -Wfatal-errors -Wall -Wextra -Wpedantic -Wshadow -W -pedantic -Wno-reserved-id-macro -Wno-keyword-macro
+CXXFLAGS = -fsanitize=address -std=c++11 -Wfatal-errors -Wall -Wextra -Wpedantic -Wshadow -W -pedantic -Wno-reserved-id-macro -Wno-keyword-macro
 LDFLAGS = -latomic -lpthread
 INC=-I./src/inc/json -I./src/inc -I./src/json -I./src/sketch -I./src
 
