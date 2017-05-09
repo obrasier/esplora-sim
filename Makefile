@@ -3,7 +3,7 @@ CXX = clang++
 ARCHFLAGS ?=
 CFLAGS =
 CXXFLAGS = -std=c++11 -Wfatal-errors -Wall -Wextra -Wpedantic -Wshadow -W -pedantic -Wno-reserved-id-macro -Wno-keyword-macro
-LDFLAGS = -latomic -lpthread
+LDFLAGS = -latomic -lpthread -lm
 INC=-I./src/inc/json -I./src/inc -I./src/json -I./src/sketch -I./src
 
 # Final binary
@@ -31,7 +31,7 @@ $(BIN) : $(BUILD_DIR)/$(BIN)
 # Create build directories - same structure as sources.
 $(BUILD_DIR)/$(BIN) : $(OBJ) $(JOBJ)
 	mkdir -p $(@D)
-	$(CXX) $(LDFLAGS) $(ARCHFLAGS) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(ARCHFLAGS) $(LDFLAGS) $(CXXFLAGS) $^ -o $@
 
 # Include all .d files
 -include $(DEP)
