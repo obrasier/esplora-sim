@@ -2,8 +2,8 @@ CC=clang
 CXX = clang++
 ARCHFLAGS ?=
 CFLAGS =
-CXXFLAGS = -fsanitize=address -std=c++11 -Wfatal-errors -Wall -Wextra -Wpedantic -Wshadow -W -pedantic -Wno-reserved-id-macro -Wno-keyword-macro
-LDFLAGS = -latomic -lpthread
+CXXFLAGS = -std=c++11 -Wfatal-errors -Wall -Wextra -Wpedantic -Wshadow -W -pedantic -Wno-reserved-id-macro -Wno-keyword-macro
+LDFLAGS = -latomic -lpthread -lm
 INC=-I./src/inc/json -I./src/inc -I./src/json -I./src/sketch -I./src
 
 # Final binary
@@ -49,10 +49,7 @@ $(BUILD_DIR)/%.o : %.c
 	mkdir -p $(@D)
 	$(CC) $(ARCHFLAGS) $(CFLAGS) $(INC) -MMD -c $< -o $@
 
-
 .PHONY : clean
 clean :
-	# This should remove all generated files.
-	-rm $(BUILD_DIR)/$(BIN) $(OBJ) $(JOBJ) $(DEP)
-	touch ___client_events ___device_updates
-	rm ___device_updates ___client_events
+	rm -f $(BUILD_DIR)/$(BIN) $(OBJ) $(JOBJ) $(DEP)
+	rm -f ___device_updates ___client_events

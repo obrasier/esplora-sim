@@ -31,6 +31,14 @@
 
 # Executable
 *esplora_sim
+*esplora-sim
+*esplora_sim
+
+# Anything in the build dir
+build/*
+
+# tags file
+src/tags
 
 # tags file
 src/tags

@@ -9,11 +9,5 @@ void loop() {
   delay(1000);
   digitalWrite(13, LOW);
   delay(1000);
-  if (Esplora.readButton(1) == LOW) {
-    Esplora.writeRed(127);
-  }
-  else {
-    Esplora.writeRGB(0, 0, 0);
-  }
-
+  Serial.println("loooped");
 }
