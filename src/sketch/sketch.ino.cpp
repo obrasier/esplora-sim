@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <Esplora.h>
 void setup() {
   pinMode(13, OUTPUT);
@@ -9,5 +10,5 @@ void loop() {
   delay(1000);
   digitalWrite(13, LOW);
   delay(1000);
-  Serial.println("loooped");
+  Serial.print("loooped\r\n");
 }
