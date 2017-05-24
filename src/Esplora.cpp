@@ -68,6 +68,7 @@ int _Esplora::readLightSensor() {
 }
 
 int _Esplora::readTemperature(byte scale) {
+  _sim::increment_counter(1);
   uint32_t temp = _sim::_device.get_mux_value(CH_TEMPERATURE);
   if (scale == DEGREES_F) {
     return (int)((temp * 450) / 512) - 58;
@@ -94,7 +95,7 @@ int _Esplora::readJoystickButton() {
 int _Esplora::readAccelerometer(byte axis) {
   _sim::increment_counter(1);
   switch (axis) {
-    case X_AXIS: return analogRead(ACCEL_X_PIN) - 512; 
+    case X_AXIS: return analogRead(ACCEL_X_PIN) - 512;
     case Y_AXIS: return analogRead(ACCEL_Y_PIN) - 512;
     case Z_AXIS: return analogRead(ACCEL_Z_PIN) - 512;
     default: return 0;
@@ -102,30 +103,34 @@ int _Esplora::readAccelerometer(byte axis) {
 }
 
 bool _Esplora::joyLowHalf(byte joyCh) {
+  _sim::increment_counter(1);
   return (_sim::_device.get_mux_value(joyCh) < 512 - JOYSTICK_DEAD_ZONE)
-    ? LOW : HIGH;
+         ? LOW : HIGH;
 }
 
 bool _Esplora::joyHighHalf(byte joyCh) {
+  _sim::increment_counter(1);
   return (_sim::_device.get_mux_value(joyCh) > 512 + JOYSTICK_DEAD_ZONE)
-    ? LOW : HIGH;
+         ? LOW : HIGH;
 }
 
 bool _Esplora::readButton(byte button) {
   if (button >= SWITCH_1 && button <= SWITCH_4) {
     button--;
   } else {
+
+    _sim::increment_counter(1);
     return HIGH;
   }
-  switch(button) {
-  case JOYSTICK_RIGHT:
-    return joyLowHalf(CH_JOYSTICK_X);
-  case JOYSTICK_LEFT:
-    return joyHighHalf(CH_JOYSTICK_X);
-  case JOYSTICK_UP:
-    return joyLowHalf(CH_JOYSTICK_Y);
-  case JOYSTICK_DOWN:
-    return joyHighHalf(CH_JOYSTICK_Y);
+  switch (button) {
+    case JOYSTICK_RIGHT:
+      return joyLowHalf(CH_JOYSTICK_X);
+    case JOYSTICK_LEFT:
+      return joyHighHalf(CH_JOYSTICK_X);
+    case JOYSTICK_UP:
+      return joyLowHalf(CH_JOYSTICK_Y);
+    case JOYSTICK_DOWN:
+      return joyHighHalf(CH_JOYSTICK_Y);
   }
   _sim::increment_counter(1);
   return (_sim::_device.get_mux_value(button) > 512) ? HIGH : LOW;
@@ -150,38 +155,47 @@ void _Esplora::writeRGB(byte red, byte green, byte blue) {
 // writeRed calls analogWrite to write to the correct pin
 // TODO: remove led update
 void _Esplora::writeRed(byte red) {
-  if (red == lastRed)
+  if (red == lastRed) {
+    _sim::increment_counter(1);
     return;
+  }
   lastRed = red;
   analogWrite(RED_PIN, red);
   _sim::increment_counter(1);
 }
 
 void _Esplora::writeGreen(byte green) {
-  if (green == lastGreen)
+  if (green == lastGreen) {
+    _sim::increment_counter(1);
     return;
+  }
   lastGreen = green;
   analogWrite(GREEN_PIN, green);
   _sim::increment_counter(1);
 }
 
 void _Esplora::writeBlue(byte blue) {
-  if (blue == lastBlue)
+  if (blue == lastBlue) {
+    _sim::increment_counter(1);
     return;
+  }
   lastBlue = blue;
   analogWrite(BLUE_PIN, blue);
   _sim::increment_counter(1);
 }
 
 byte _Esplora::readRed() {
+  _sim::increment_counter(1);
   return lastRed;
 }
 
 byte _Esplora::readGreen() {
+  _sim::increment_counter(1);
   return lastGreen;
 }
 
 byte _Esplora::readBlue() {
+  _sim::increment_counter(1);
   return lastBlue;
 }
 

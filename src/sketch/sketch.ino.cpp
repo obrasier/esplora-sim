@@ -11,4 +11,5 @@ void loop() {
   digitalWrite(13, LOW);
   delay(1000);
   Serial.print("loooped\r\n");
+  Esplora.writeRGB(255, 0, 0);
 }

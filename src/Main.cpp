@@ -61,6 +61,8 @@ _Esplora Esplora;
 // all the functions the simulator uses easily
 namespace _sim {
 
+uint32_t time_since_sleep = 0;
+uint64_t last_sleep_us = 0;
 
 _Device _device;
 
@@ -337,6 +339,8 @@ setup_output_pipe() {
 // Run the Arduino code
 void
 run_code() {
+  uint32_t loops_before_pause = 10;
+  uint16_t sleep_time = 10;
   setup();
   _sim::increment_counter(1032); // takes 1032 us for setup to run
   while (_sim::running) {
@@ -344,6 +348,11 @@ run_code() {
     loop();
     _sim::check_suspend();
     _sim::check_shutdown();
+    if (_sim::current_loop % loops_before_pause == 0 || _sim::time_since_sleep > 2000) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+      _sim::last_sleep_us = _sim::get_elapsed_micros();
+      _sim::time_since_sleep = 0;
+    }
   }
 }
 
