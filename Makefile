@@ -49,10 +49,7 @@ $(BUILD_DIR)/%.o : %.c
 	mkdir -p $(@D)
 	$(CC) $(ARCHFLAGS) $(CFLAGS) $(INC) -MMD -c $< -o $@
 
-
 .PHONY : clean
 clean :
-	# This should remove all generated files.
-	-rm $(BUILD_DIR)/$(BIN) $(OBJ) $(JOBJ) $(DEP)
-	touch ___client_events ___device_updates
-	rm ___device_updates ___client_events
+	rm -f $(BUILD_DIR)/$(BIN) $(OBJ) $(JOBJ) $(DEP)
+	rm -f ___device_updates ___client_events

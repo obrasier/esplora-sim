@@ -150,7 +150,7 @@ void send_pin_update() {
     char json[1024];
     char* json_ptr = json;
     char* json_end = json + sizeof(json);
-    appendf(&json_ptr, json_end, "[{ \"type\": \"arduino_pins\", \"ticks\": %d, \"data\": {",
+    appendf(&json_ptr, json_end, "[{ \"type\": \"arduino_pins\", \"ticks\": %" PRIu64 ", \"data\": {",
             get_elapsed_micros());
 
     list_to_json("p", &json_ptr, json_end, pins, sizeof(pins) / sizeof(int));
@@ -179,7 +179,7 @@ write_event_ack(const char* event_type, const char* ack_data_json) {
   char* json_end = json + sizeof(json);
 
   appendf(&json_ptr, json_end,
-          "[{ \"type\": \"arduino_ack\", \"ticks\": %d, \"data\": { \"type\": \"%s\", \"data\": "
+          "[{ \"type\": \"arduino_ack\", \"ticks\": %" PRIu64 ", \"data\": { \"type\": \"%s\", \"data\": "
           "%s }}]\n",
           get_elapsed_micros(), event_type, ack_data_json ? ack_data_json : "{}");
   write_to_updates(json, json_ptr - json);
@@ -213,7 +213,7 @@ process_client_mux(const json_value* data) {
   double v = voltage->as.number;
   _device.set_mux_voltage(pin_num, v);
   char ack_json[1024];
-  snprintf(ack_json, sizeof(ack_json), "{\"id\": %d, \"v\": %.2f}", static_cast<int32_t>(pin_num), static_cast<double>(v));
+  snprintf(ack_json, sizeof(ack_json), "{\"pin\": %d, \"v\": %.2f}", static_cast<int32_t>(pin_num), static_cast<double>(v));
   write_event_ack("arduino_mux", ack_json);
 }
 
@@ -238,7 +238,7 @@ process_client_pins(const json_value* data) {
   int val = voltage->as.number;
   _device.set_pin_voltage(pin_num, val);
   char ack_json[1024];
-  snprintf(ack_json, sizeof(ack_json), "{\"id\": %d, \"v\":%.2f}", static_cast<int32_t>(pin_num), static_cast<double>(val));
+  snprintf(ack_json, sizeof(ack_json), "{\"pin\": %d, \"v\":%.2f}", static_cast<int32_t>(pin_num), static_cast<double>(val));
   write_event_ack("arduino_pin", ack_json);
 }
 
@@ -315,7 +315,6 @@ process_client_event(int fd) {
     }
     line_start = line_end + 1;
   }
-  write_event_ack("arduino_event", nullptr);
 }
 
 
