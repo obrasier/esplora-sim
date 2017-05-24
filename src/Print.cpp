@@ -41,7 +41,7 @@ void Print::write(const char *str) {
       std::putchar(*str++);
       _sim::increment_counter(8 + rand() % 5);
     } else {
-      *str++;
+      str++;
     }
   }
   fflush(stdout);
@@ -58,7 +58,7 @@ void Print::write(const uint8_t *buffer, size_t size) {
       _sim::increment_counter(8 + rand() % 5);
     }
     else {
-      *buffer++;
+      buffer++;
     }
   }
   fflush(stdout);
