@@ -52,6 +52,7 @@ _Device::_Device() {
 
 void _Device::increment_counter(uint32_t us) {
   _micros_elapsed += us;
+  _sim::time_since_sleep = (_micros_elapsed - _sim::last_sleep_us)/1000;
   std::lock_guard<std::mutex> lk(_m_countdown);
   for (int i = 0; i < NUM_PINS; i++) {
     if (_pins[i]._countdown > 0) {
@@ -294,5 +295,10 @@ increment_counter(int us) {
   check_suspend();
   check_shutdown();
   send_pin_update();
+  if (time_since_sleep > 2000) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    time_since_sleep = 0;
+    last_sleep_us = _device.get_micros();
+  }
 }
 } // namespace
