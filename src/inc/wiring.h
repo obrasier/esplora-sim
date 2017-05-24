@@ -125,8 +125,8 @@ void analogReference(uint8_t mode);
 void attachInterrupt(uint8_t, void (*)(void), int mode);
 void detachInterrupt(uint8_t);
 
-void setup(void);
-void loop(void);
+// void setup(void);
+// void loop(void);
 
 int* empty(void);
 

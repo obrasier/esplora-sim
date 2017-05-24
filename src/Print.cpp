@@ -37,8 +37,12 @@ void Print::write(const char *str) {
   pinMode(LED_BUILTIN_TX, OUTPUT);
   digitalWrite(LED_BUILTIN_TX, HIGH);
   while (*str) {
-    std::putchar(*str++);
-    _sim::increment_counter(8 + rand() % 5);
+    if (*str != '\r') {
+      std::putchar(*str++);
+      _sim::increment_counter(8 + rand() % 5);
+    } else {
+      str++;
+    }
   }
   fflush(stdout);
   digitalWrite(LED_BUILTIN_TX, LOW);
@@ -48,9 +52,14 @@ void Print::write(const char *str) {
 void Print::write(const uint8_t *buffer, size_t size) {
   pinMode(LED_BUILTIN_TX, OUTPUT);
   digitalWrite(LED_BUILTIN_TX, HIGH);
-  while (size--){
-    std::putchar(*buffer++);
-    _sim::increment_counter(8 + rand() % 5);
+  while (size--) {
+    if (*buffer != '\r') {
+      std::putchar(*buffer++);
+      _sim::increment_counter(8 + rand() % 5);
+    }
+    else {
+      buffer++;
+    }
   }
   fflush(stdout);
   digitalWrite(LED_BUILTIN_TX, LOW);
@@ -60,6 +69,8 @@ void Print::print(const String &s) {
   pinMode(LED_BUILTIN_TX, OUTPUT);
   digitalWrite(LED_BUILTIN_TX, HIGH);
   for (unsigned i = 0; i < s.length(); i++) {
+    if (s[i] == '\r')
+      continue;
     std::putchar(s[i]);
     _sim::increment_counter(8 + rand() % 5);
   }
@@ -111,7 +122,6 @@ void Print::print(double n, int digits) {
 }
 
 void Print::println(void) {
-  print('\r');
   print('\n');
   fflush(stdout);
 }

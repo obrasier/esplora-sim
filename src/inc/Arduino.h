@@ -26,6 +26,7 @@
 #include "binary.h"
 #include "wiring.h"
 #include "pins_arduino.h"
+#include "Serial.h"
 
 
 #define HIGH 0x1
@@ -103,7 +104,7 @@ void increment_counter(int us);
 
 
 // // in sketch.ino
-// void setup();
-// void loop();
+void setup();
+void loop();
 
 #endif
