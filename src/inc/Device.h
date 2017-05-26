@@ -41,7 +41,11 @@ void increment_counter(int us);
 void send_pin_update();
 void send_led_update();
 
-
+bool has_exceeded_random_call_limit();
+void set_random_choice(int32_t count, const char* result);
+void set_random_state(int32_t next, int32_t repeat);
+bool get_marker_failure_event(const char** category, const char** message);
+void set_marker_failure_event(const char* category, const char* message);
 }
 
 struct MPin {
