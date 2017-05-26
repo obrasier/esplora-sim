@@ -301,4 +301,65 @@ increment_counter(int us) {
     last_sleep_us = _device.get_micros();
   }
 }
+
+volatile bool _inject_random = false;
+volatile int32_t _next_random = 0;
+volatile int32_t _remaining_random = 0;
+volatile int32_t _random_choice_count = -1;
+char _random_choice_repr[20480] = {0};
+
+char _marker_failure_category[1024] = {0};
+char _marker_failure_message[20480] = {0};
+
+void
+set_random_state(int32_t next, int32_t repeat) {
+  if (next >= 0) {
+    _inject_random = true;
+    _next_random = next;
+    if (repeat < 0) {
+      _remaining_random = std::numeric_limits<int32_t>::max();
+    } else {
+      _remaining_random = repeat;
+    }
+  } else {
+    _inject_random = false;
+  }
+}
+
+void
+set_random_choice(int32_t count, const char* result) {
+  _random_choice_count = count;
+  strncpy(_random_choice_repr, result, sizeof(_random_choice_repr));
+}
+
+bool
+has_exceeded_random_call_limit() {
+  return _remaining_random < 0;
+}
+
+bool
+get_marker_failure_event(const char** category, const char** message) {
+  if (strlen(_marker_failure_category) == 0 || strlen(_marker_failure_message) == 0) {
+    *category = nullptr;
+    *message = nullptr;
+    return false;
+  } else {
+    *category = _marker_failure_category;
+    *message = _marker_failure_message;
+    return true;
+  }
+}
+
+void
+set_marker_failure_event(const char* category, const char* message) {
+  if (category && message) {
+    strncpy(_marker_failure_category, category, sizeof(_marker_failure_category));
+    strncpy(_marker_failure_message, message, sizeof(_marker_failure_message));
+  } else {
+    _marker_failure_category[0] = 0;
+    _marker_failure_message[0] = 0;
+  }
+}
+
+
 } // namespace
