@@ -34,6 +34,8 @@
 *esplora-sim
 *esplora_sim
 
+*.orig
+
 # Anything in the build dir
 build/*
 
