@@ -27,6 +27,7 @@ double dmap(double val, double x1, double x2, double y1, double y2) {
 
 _Device::_Device() {
   _micros_elapsed = 0;
+  _micros_since_heartbeat = 0;
 
   for (int i = 0; i < NUM_PINS; i++) {
     _pins[i]._pin = i;
@@ -52,6 +53,11 @@ _Device::_Device() {
 
 void _Device::increment_counter(uint32_t us) {
   _micros_elapsed += us;
+  _micros_since_heartbeat += us;
+  if (_sim::fast_mode && _micros_since_heartbeat >= 60000){
+    _micros_since_heartbeat = 0;
+    _sim::write_heartbeat();
+  }
   _sim::time_since_sleep = (_micros_elapsed - _sim::last_sleep_us)/1000;
   std::lock_guard<std::mutex> lk(_m_countdown);
   for (int i = 0; i < NUM_PINS; i++) {

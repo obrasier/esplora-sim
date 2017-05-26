@@ -46,6 +46,7 @@ void set_random_choice(int32_t count, const char* result);
 void set_random_state(int32_t next, int32_t repeat);
 bool get_marker_failure_event(const char** category, const char** message);
 void set_marker_failure_event(const char* category, const char* message);
+void write_heartbeat();
 }
 
 struct MPin {
@@ -77,6 +78,7 @@ class _Device {
  private:
 
   std::atomic<uint64_t> _micros_elapsed;
+  std::atomic<uint32_t> _micros_since_heartbeat;
 
   std::array<Pin, NUM_PINS> _pins;
   std::array<MPin, MUX_PINS> _mux_pins;
