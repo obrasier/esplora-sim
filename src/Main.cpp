@@ -63,7 +63,7 @@ _Esplora Esplora;
 namespace _sim {
 
 uint32_t time_since_sleep = 0;
-uint64_t last_sleep_us = 0;
+uint32_t last_sleep_ms = 0;
 
 // When did we last write a heartbeat, in (if enabled in heartbeat_mode).
 uint32_t last_heartbeat = 0;
@@ -95,11 +95,11 @@ std::atomic<uint32_t> current_loop(0);
 // Elapsed time of the arduino in microseconds
 uint64_t
 get_elapsed_millis() {
-  return round(_device.get_micros()/1000);
+  return round(_device.get_micros() / 1000);
 }
 
 uint64_t
-expected_macro_ticks() {
+expected_millis() {
   static uint32_t starting_clock = 0;
 
   struct timespec t;
@@ -214,7 +214,7 @@ check_random_updates() {
             "[{ \"type\": \"random_state\", \"ticks\": %" PRIu64 ", \"data\": { \"exceeded\": %s }}]\n",
             get_elapsed_millis(), exceeded ? "true" : "false");
 
-    write_to_updates(json, json_ptr - json, true);
+    write_to_updates(json, json_ptr - json, false);
 
     exceeded_prev = exceeded;
   }
@@ -251,7 +251,7 @@ check_marker_failure_updates() {
     buffer_destroy(category_buf);
     buffer_destroy(message_buf);
 
-    write_to_updates(json, json_ptr - json, true);
+    write_to_updates(json, json_ptr - json, false);
 
     set_marker_failure_event(nullptr, nullptr);
   }
@@ -267,9 +267,10 @@ write_heartbeat() {
   appendf(&json_ptr, json_end,
           "[{ \"type\": \"arduino_heartbeat\", \"ticks\": %" PRIu64 ", \"data\": { \"real_ticks\": \"%" PRIu64 "\" "
           "}}]\n",
-          get_elapsed_millis(), expected_macro_ticks());
+          get_elapsed_millis(), expected_millis());
 
-  write_to_updates(json, json_ptr - json, true);
+  write_to_updates(json, json_ptr - json, false);
+
 }
 
 void
@@ -280,7 +281,7 @@ write_bye() {
 
   appendf(&json_ptr, json_end,
           "[{ \"type\": \"arduino_bye\", \"ticks\": %" PRIu64 ", \"data\": { \"real_ticks\": \"%" PRIu64 "\" }}]\n",
-          get_elapsed_millis(), expected_macro_ticks());
+          get_elapsed_millis(), expected_millis());
 
   write_to_updates(json, json_ptr - json, false);
 }
@@ -488,7 +489,6 @@ handle_timerfd_event(uint32_t ticks) {
   if (heartbeat_mode && get_elapsed_millis() >= last_heartbeat + HEARTBEAT_MS) {
     last_heartbeat = get_elapsed_millis();
     write_heartbeat();
-    std::cout << "write_heartbeat" << std::endl;
   }
 
   return ticks;
@@ -511,7 +511,7 @@ run_code() {
     _sim::check_shutdown();
     if (_sim::current_loop % loops_before_pause == 0 || _sim::time_since_sleep > 2000) {
       std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
-      _sim::last_sleep_us = _sim::get_elapsed_millis();
+      _sim::last_sleep_ms = _sim::get_elapsed_millis();
       _sim::time_since_sleep = 0;
     }
   }
@@ -651,7 +651,7 @@ main_thread() {
         uint32_t sleep_nsec = 1000 * us_until_timer_fire;
 
         // But scale so that we converge on 'real' time.
-        uint64_t e = _sim::expected_macro_ticks();
+        uint64_t e = _sim::expected_millis();
         if (_sim::get_elapsed_millis() > e) {
           sleep_nsec = (sleep_nsec * 11) / 10;
         } else if (_sim::get_elapsed_millis() < e) {

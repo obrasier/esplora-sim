@@ -54,11 +54,11 @@ _Device::_Device() {
 void _Device::increment_counter(uint32_t us) {
   _micros_elapsed += us;
   _micros_since_heartbeat += us;
-  if (_sim::fast_mode && _micros_since_heartbeat >= 60000){
+  if (_sim::fast_mode && _micros_since_heartbeat >= 60000) {
     _micros_since_heartbeat = 0;
     _sim::write_heartbeat();
   }
-  _sim::time_since_sleep = (_micros_elapsed - _sim::last_sleep_us)/1000;
+  _sim::time_since_sleep = (_micros_elapsed / 1000) - _sim::last_sleep_ms;
   std::lock_guard<std::mutex> lk(_m_countdown);
   for (int i = 0; i < NUM_PINS; i++) {
     if (_pins[i]._countdown > 0) {
@@ -220,8 +220,7 @@ void _Device::set_tone(int pin, uint32_t freq) {
   if (freq != 0) {
     period = 1000000 / freq;
     _pins[pin]._is_tone = true;
-  }
-  else {
+  } else {
     _pins[pin]._is_tone = false;
   }
   _m_pins.unlock();
@@ -304,7 +303,7 @@ increment_counter(int us) {
   if (time_since_sleep > 2000) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     time_since_sleep = 0;
-    last_sleep_us = _device.get_micros();
+    last_sleep_ms = _device.get_micros() / 1000;
   }
 }
 
