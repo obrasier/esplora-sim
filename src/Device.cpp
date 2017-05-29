@@ -52,11 +52,7 @@ _Device::_Device() {
   set_mux_voltage(CH_MIC, 0.0);
 }
 
-
-void _Device::increment_counter(uint32_t us) {
-  _micros_elapsed += us;
-  _sim::us_since_heartbeat += us;
-  _sim::time_since_sleep = (_micros_elapsed / 1000) - _sim::last_sleep_ms;
+void _Device::process_countdown(uint32_t us) {
   std::lock_guard<std::mutex> lk(_m_countdown);
   for (int i = 0; i < NUM_PINS; i++) {
     if (_pins[i]._countdown > 0) {
@@ -68,6 +64,11 @@ void _Device::increment_counter(uint32_t us) {
       }
     }
   }
+}
+
+void _Device::increment_counter(uint32_t us) {
+  _micros_elapsed += us;
+  process_countdown(us);
 }
 
 uint64_t _Device::get_micros() {
@@ -287,14 +288,12 @@ check_shutdown() {
   if (shutdown) {
     running = false;
     fast_mode = true;
-    send_pin_update();
     send_updates = false;
   }
 }
 
 void check_sync() {
-  
-  uint32_t wall_time_us = expected_micros();
+  uint32_t wall_time_us = wall_time_micros();
   uint32_t arduino_time_us = _device.get_micros();
   if (!fast_mode && arduino_time_us > wall_time_us + SYNC_OFFSET_US) {
     suspend = true;
@@ -303,16 +302,10 @@ void check_sync() {
 
 void
 increment_counter(int us) {
-  _device.increment_counter(us);
-  check_sync();
+  increment_arduino(us);
   check_suspend();
   check_shutdown();
-  send_pin_update();
-  if (time_since_sleep > 2000) {
-    time_since_sleep = 0;
-    last_sleep_ms = _device.get_micros() / 1000;
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
+
 }
 
 volatile bool _inject_random = false;

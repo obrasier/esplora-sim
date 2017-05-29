@@ -47,7 +47,8 @@ void set_random_state(int32_t next, int32_t repeat);
 bool get_marker_failure_event(const char** category, const char** message);
 void set_marker_failure_event(const char* category, const char* message);
 void write_heartbeat();
-uint64_t expected_micros();
+uint64_t wall_time_micros();
+void increment_arduino(uint32_t us);
 }
 
 struct MPin {
@@ -98,6 +99,7 @@ class _Device {
   double get_voltage(int pin);
   void set_input(int pin);
   void set_output(int pin);
+  void process_countdown(uint32_t us);
 
  public:
   _Device();

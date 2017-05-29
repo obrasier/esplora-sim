@@ -121,38 +121,14 @@ micros() {
   return e - rem;
 }
 
-void time_to_finish(uint32_t us) {
-  if (_sim::fast_mode) {
-    _sim::increment_counter(us);
-  } else {
-    _sim::wall_start = _sim::expected_micros();
-    if (us > 60000) {
-      _sim::micros_to_increment = us;
-      _sim::increment_counter(60000);
-      _sim::suspend = true;
-    } else {
-      _sim::wall_start = 0;
-      _sim::increment_counter(us);
-      _sim::micros_to_increment = 0;
-    }
-  }
-}
 
 void delay(uint32_t ms) {
-  if (ms == 0) {
-    _sim::increment_counter(1);
-    return;
-  }
-  time_to_finish(ms*1000);
+  _sim::increment_counter(ms*1000);
 
 }
 
 void delayMicroseconds(uint32_t us) {
-  if (us == 0) {
-    _sim::increment_counter(1);
-    return;
-  }
-  time_to_finish(us);
+  _sim::increment_counter(us);
 }
 
 int map(int x, int fromLow, int fromHigh, int toLow, int toHigh) {
