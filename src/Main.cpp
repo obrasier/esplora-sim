@@ -65,12 +65,17 @@ namespace _sim {
 uint32_t time_since_sleep = 0;
 uint32_t last_sleep_ms = 0;
 
+std::atomic<int32_t> micros_to_increment(0);
+std::atomic<uint32_t> wall_start(0);
+
 // When did we last write a heartbeat, in (if enabled in heartbeat_mode).
 uint32_t last_heartbeat = 0;
 const uint32_t HEARTBEAT_MS = 60;
+const uint32_t N_UPDATE_US = 20000;
 
 _Device _device;
 
+std::mutex m_update;
 std::mutex m_suspend;
 std::condition_variable cv_suspend;
 
@@ -91,6 +96,7 @@ int updates_fd = -1;
 
 // current loop number
 std::atomic<uint32_t> current_loop(0);
+std::atomic<uint64_t> us_since_heartbeat(0);
 
 // Elapsed time of the arduino in microseconds
 uint64_t
@@ -99,29 +105,35 @@ get_elapsed_millis() {
 }
 
 uint64_t
-expected_millis() {
+get_elapsed_micros() {
+  return _device.get_micros();
+}
+
+
+uint64_t
+expected_micros() {
   static uint32_t starting_clock = 0;
 
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC_COARSE, &t);
 
-  uint32_t real_ms_ticks = (t.tv_sec * 1000 + (t.tv_nsec / 1000000));
+  uint32_t real_us_ticks = (t.tv_sec * 1000000 + (t.tv_nsec / 1000));
 
   if (starting_clock == 0) {
-    starting_clock = real_ms_ticks - get_elapsed_millis();
+    starting_clock = real_us_ticks - get_elapsed_millis();
   }
-  return real_ms_ticks - starting_clock;
+  return real_us_ticks - starting_clock;
 }
 
 // Write to the output pipe
 // Add a 5 us delay to stop data corruption from spamming the command line gui
 void
 write_to_updates(const void* buf, size_t count, bool should_suspend = false) {
-  if (should_suspend && _sim::fast_mode) {
+  if (should_suspend) {
     suspend = true;
   }
+  std::unique_lock<std::mutex> lk(m_update);
   write(updates_fd, buf, count);
-  // std::this_thread::sleep_for(std::chrono::microseconds(5));
 }
 
 
@@ -267,7 +279,9 @@ write_heartbeat() {
   appendf(&json_ptr, json_end,
           "[{ \"type\": \"arduino_heartbeat\", \"ticks\": %" PRIu64 ", \"data\": { \"real_ticks\": \"%" PRIu64 "\" "
           "}}]\n",
-          get_elapsed_millis(), expected_millis());
+          get_elapsed_millis(), expected_micros() / 1000);
+
+  us_since_heartbeat = 0;
 
   write_to_updates(json, json_ptr - json, false);
 
@@ -281,9 +295,9 @@ write_bye() {
 
   appendf(&json_ptr, json_end,
           "[{ \"type\": \"arduino_bye\", \"ticks\": %" PRIu64 ", \"data\": { \"real_ticks\": \"%" PRIu64 "\" }}]\n",
-          get_elapsed_millis(), expected_millis());
+          get_elapsed_millis(), expected_micros() / 1000);
 
-  write_to_updates(json, json_ptr - json, false);
+  write_to_updates(json, json_ptr - json, true);
 }
 
 
@@ -297,7 +311,7 @@ write_event_ack(const char* event_type, const char* ack_data_json) {
   appendf(&json_ptr, json_end,
           "[{ \"type\": \"arduino_ack\", \"ticks\": %" PRIu64 ", \"data\": { \"type\": \"%s\", \"data\": "
           "%s }}]\n",
-          get_elapsed_millis(), event_type, ack_data_json ? ack_data_json : "{}");
+          get_elapsed_micros() / 1000, event_type, ack_data_json ? ack_data_json : "{}");
   write_to_updates(json, json_ptr - json);
 }
 
@@ -473,25 +487,24 @@ setup_output_pipe() {
 // Fires the hardware timer and periodically updates LED & GPIO state.
 // Takes the number of ticks since the last call, and returns the number of ticks
 // until the next call.
-uint32_t
-handle_timerfd_event(uint32_t ticks) {
-  static uint32_t micros_last_update = 0;
-  if (get_elapsed_millis() != micros_last_update) {
+void
+arduino_check_for_changes() {
+  static uint32_t millis_last_update = 0;
+
+
+  if (get_elapsed_millis() > millis_last_update + N_UPDATE_US) {
     send_pin_update();
     check_random_updates();
     check_marker_failure_updates();
-
-    micros_last_update = get_elapsed_millis();
+    millis_last_update = get_elapsed_millis();
   }
 
   // Periodically heartbeat if the '-t' flag is enabled.
   // This is useful for the marker to ensure that it sees an event at least every N ticks.
-  if (heartbeat_mode && get_elapsed_millis() >= last_heartbeat + HEARTBEAT_MS) {
-    last_heartbeat = get_elapsed_millis();
+  if (heartbeat_mode && expected_micros() / 1000 >= last_heartbeat + HEARTBEAT_MS) {
+    last_heartbeat = expected_micros() / 1000;
     write_heartbeat();
   }
-
-  return ticks;
 }
 
 
@@ -507,9 +520,10 @@ run_code() {
   while (_sim::running) {
     _sim::current_loop++;
     loop();
+    _sim::arduino_check_for_changes();
     _sim::check_suspend();
     _sim::check_shutdown();
-    if (_sim::current_loop % loops_before_pause == 0 || _sim::time_since_sleep > 2000) {
+    if (_sim::current_loop % loops_before_pause == 0 || _sim::time_since_sleep > 200) {
       std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
       _sim::last_sleep_ms = _sim::get_elapsed_millis();
       _sim::time_since_sleep = 0;
@@ -609,6 +623,16 @@ main_thread() {
     struct epoll_event events[MAX_EVENTS];
     int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, epoll_timeout);
 
+    if (!_sim::fast_mode) {
+      uint32_t wall_time = _sim::expected_micros();
+      uint32_t arduino_time = _sim::get_elapsed_micros();
+      if (arduino_time < wall_time && !_sim::micros_to_increment) {
+        std::unique_lock<std::mutex> lk(_sim::m_suspend);
+        _sim::suspend = false;
+        _sim::cv_suspend.notify_all();
+      }
+    }
+
     if (nfds == -1) {
       if (errno == EINTR) {
         // Timeout or interrupted.
@@ -645,13 +669,13 @@ main_thread() {
 
         // Call the timer, telling it how many ticks have elapsed since the last call.
         // It returns the number of ticks until the next call.
-        us_until_timer_fire = _sim::handle_timerfd_event(us_until_timer_fire);
+        _sim::arduino_check_for_changes();
 
         // Figure out how long to set the timerfd for. One tick is 16us.
         uint32_t sleep_nsec = 1000 * us_until_timer_fire;
 
         // But scale so that we converge on 'real' time.
-        uint64_t e = _sim::expected_millis();
+        uint64_t e = _sim::expected_micros() / 1000;
         if (_sim::get_elapsed_millis() > e) {
           sleep_nsec = (sleep_nsec * 11) / 10;
         } else if (_sim::get_elapsed_millis() < e) {

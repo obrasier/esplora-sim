@@ -6,12 +6,11 @@ void setup() {
 int count = 0;
 
 void loop() {
-  Serial.print("printing something");
   digitalWrite(13, HIGH);
-  Serial.println("printing another thing");
-  delay(1000);
-  Serial.print("delaaayy");
+  Serial.println(count++);
+  digitalWrite(13, LOW);
+  digitalWrite(13, HIGH);
   digitalWrite(13, LOW);
   delay(1000);
-  Esplora.writeRGB(255, 0, 0);
+  // Esplora.writeRGB(255, 0, 0);
 }
