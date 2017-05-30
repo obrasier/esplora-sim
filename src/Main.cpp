@@ -62,11 +62,6 @@ _Esplora Esplora;
 // all the functions the simulator uses easily
 namespace _sim {
 
-uint32_t time_since_sleep = 0;
-uint32_t last_sleep_ms = 0;
-
-std::atomic<int32_t> micros_to_increment(0);
-std::atomic<uint32_t> wall_start(0);
 
 // When did we last write a heartbeat, in (if enabled in heartbeat_mode).
 const uint32_t HEARTBEAT_US = 60000;
@@ -96,7 +91,6 @@ int updates_fd = -1;
 
 // current loop number
 std::atomic<uint32_t> current_loop(0);
-std::atomic<uint64_t> us_since_heartbeat(0);
 
 // Elapsed time of the arduino in microseconds
 uint64_t
@@ -281,7 +275,6 @@ write_heartbeat() {
           "}}]\n",
           get_elapsed_millis(), wall_time_micros() / 1000);
 
-  us_since_heartbeat = 0;
   write_to_updates(json, json_ptr - json, false);
 
 }
