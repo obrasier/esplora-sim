@@ -11,6 +11,7 @@ void loop() {
   digitalWrite(13, LOW);
   digitalWrite(13, HIGH);
   digitalWrite(13, LOW);
-  delay(1000);
+  Esplora.tone(500, 2000);
+  delay(4000);
   // Esplora.writeRGB(255, 0, 0);
 }

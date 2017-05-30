@@ -282,7 +282,6 @@ write_heartbeat() {
           get_elapsed_millis(), wall_time_micros() / 1000);
 
   us_since_heartbeat = 0;
-
   write_to_updates(json, json_ptr - json, false);
 
 }
