@@ -280,6 +280,19 @@ write_heartbeat() {
 }
 
 void
+write_hello() {
+  char json[1024];
+  char* json_ptr = json;
+  char* json_end = json + sizeof(json);
+
+  appendf(&json_ptr, json_end,
+          "[{ \"type\": \"arduino_hello\", \"ticks\": %" PRIu64 ", \"data\": {}}]\n",
+          get_elapsed_millis());
+
+  write_to_updates(json, json_ptr - json, false);
+}
+
+void
 write_bye() {
   char json[1024];
   char* json_ptr = json;
@@ -729,6 +742,13 @@ main(int argc, char** argv) {
 
   // setup
   _sim::setup_output_pipe();
+
+  // Let the UI know that the simulator has started (and compilation has finished).
+  _sim::write_hello();
+
+  if (_sim::heartbeat_mode) {
+    _sim::write_heartbeat();
+  }
 
   // run the code
   std::thread code_thread(code_thread_main);
