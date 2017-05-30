@@ -21,6 +21,8 @@
 #include <iostream>
 #include <cmath>
 
+const uint32_t SYNC_OFFSET_US = 10000;
+
 double dmap(double val, double x1, double x2, double y1, double y2) {
   return (val - x1) * (y2 - y1) / (x2 - x1) + y1;
 }
@@ -50,15 +52,7 @@ _Device::_Device() {
   set_mux_voltage(CH_MIC, 0.0);
 }
 
-
-void _Device::increment_counter(uint32_t us) {
-  _micros_elapsed += us;
-  _micros_since_heartbeat += us;
-  if (_sim::fast_mode && _micros_since_heartbeat >= 60000){
-    _micros_since_heartbeat = 0;
-    _sim::write_heartbeat();
-  }
-  _sim::time_since_sleep = (_micros_elapsed - _sim::last_sleep_us)/1000;
+void _Device::process_countdown(uint32_t us) {
   std::lock_guard<std::mutex> lk(_m_countdown);
   for (int i = 0; i < NUM_PINS; i++) {
     if (_pins[i]._countdown > 0) {
@@ -70,6 +64,11 @@ void _Device::increment_counter(uint32_t us) {
       }
     }
   }
+}
+
+void _Device::increment_counter(uint32_t us) {
+  _micros_elapsed += us;
+  process_countdown(us);
 }
 
 uint64_t _Device::get_micros() {
@@ -220,8 +219,7 @@ void _Device::set_tone(int pin, uint32_t freq) {
   if (freq != 0) {
     period = 1000000 / freq;
     _pins[pin]._is_tone = true;
-  }
-  else {
+  } else {
     _pins[pin]._is_tone = false;
   }
   _m_pins.unlock();
@@ -290,22 +288,24 @@ check_shutdown() {
   if (shutdown) {
     running = false;
     fast_mode = true;
-    send_pin_update();
     send_updates = false;
+  }
+}
+
+void check_sync() {
+  uint32_t wall_time_us = wall_time_micros();
+  uint32_t arduino_time_us = _device.get_micros();
+  if (!fast_mode && arduino_time_us > wall_time_us + SYNC_OFFSET_US) {
+    suspend = true;
   }
 }
 
 void
 increment_counter(int us) {
-  _device.increment_counter(us);
+  increment_arduino(us);
   check_suspend();
   check_shutdown();
-  send_pin_update();
-  if (time_since_sleep > 2000) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    time_since_sleep = 0;
-    last_sleep_us = _device.get_micros();
-  }
+
 }
 
 volatile bool _inject_random = false;

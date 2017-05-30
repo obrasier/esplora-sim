@@ -2,8 +2,8 @@
 #include "Arduino.h"
 #include "global_variables.h"
 
-const int sleep_period = 100; // sleep period in milliseconds
-const int us_sleep_period = sleep_period * 1000;
+// const int sleep_period = 100; // sleep period in milliseconds
+// const int us_sleep_period = sleep_period * 1000;
 
 
 void pinMode(int pin, int mode) {
@@ -121,52 +121,14 @@ micros() {
   return e - rem;
 }
 
+
 void delay(uint32_t ms) {
-  if (ms == 0) {
-    _sim::increment_counter(1);
-    return;
-  }
-  if (!_sim::fast_mode) {
-    // d is the division, number of sleep periods + r, remainder
-    int d = ms / sleep_period;
-    int r = ms % sleep_period;
-    while (d) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(sleep_period));
-      _sim::increment_counter(sleep_period * 1000UL);
-      d--;
-    }
-    if (r) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(r));
-      _sim::increment_counter(r * 1000UL);
-    }
-  }
-  else {
-    _sim::increment_counter(ms * 1000UL);
-  }
+  _sim::increment_counter(ms*1000);
+
 }
 
 void delayMicroseconds(uint32_t us) {
-  if (us == 0) {
-    _sim::increment_counter(1);
-    return;
-  }
-  if (!_sim::fast_mode) {
-    // d is the division, number of sleep periods + r, remainder
-    int d = us / us_sleep_period;
-    int r = us % us_sleep_period;
-    while (d) {
-      std::this_thread::sleep_for(std::chrono::microseconds(us_sleep_period));
-      _sim::increment_counter(us_sleep_period);
-      d--;
-    }
-    if (r) {
-      std::this_thread::sleep_for(std::chrono::microseconds(r));
-      _sim::increment_counter(r);
-    }
-  }
-  else {
-    _sim::increment_counter(us);
-  }
+  _sim::increment_counter(us);
 }
 
 int map(int x, int fromLow, int fromHigh, int toLow, int toHigh) {

@@ -47,6 +47,8 @@ void set_random_state(int32_t next, int32_t repeat);
 bool get_marker_failure_event(const char** category, const char** message);
 void set_marker_failure_event(const char* category, const char* message);
 void write_heartbeat();
+uint64_t wall_time_micros();
+void increment_arduino(uint32_t us);
 }
 
 struct MPin {
@@ -79,6 +81,8 @@ class _Device {
 
   std::atomic<uint64_t> _micros_elapsed;
   std::atomic<uint32_t> _micros_since_heartbeat;
+  std::atomic<uint32_t> _us_since_sync;
+
 
   std::array<Pin, NUM_PINS> _pins;
   std::array<MPin, MUX_PINS> _mux_pins;
@@ -95,6 +99,7 @@ class _Device {
   double get_voltage(int pin);
   void set_input(int pin);
   void set_output(int pin);
+  void process_countdown(uint32_t us);
 
  public:
   _Device();

@@ -6,8 +6,11 @@ int count = 0;
 
 void loop() {
   digitalWrite(13, HIGH);
-  delay(1000);
+  Serial.println(count++);
   digitalWrite(13, LOW);
-  delay(1000);
-  Serial.println("loooped");
+  digitalWrite(13, HIGH);
+  digitalWrite(13, LOW);
+  Esplora.tone(500, 2000);
+  delay(4000);
+  // Esplora.writeRGB(255, 0, 0);
 }

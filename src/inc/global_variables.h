@@ -30,16 +30,11 @@ extern std::mutex m_suspend;
 extern std::condition_variable cv_suspend;
 extern _Device _device;
 
-extern uint32_t time_since_sleep;
-extern uint64_t last_sleep_us;
-
 } 
 
 extern _Serial Serial;
 // extern _Serial Serial1;
 
 extern _Esplora Esplora;
-
-// 
 
 #endif

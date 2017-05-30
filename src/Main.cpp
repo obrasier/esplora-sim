@@ -62,15 +62,15 @@ _Esplora Esplora;
 // all the functions the simulator uses easily
 namespace _sim {
 
-uint32_t time_since_sleep = 0;
-uint64_t last_sleep_us = 0;
 
 // When did we last write a heartbeat, in (if enabled in heartbeat_mode).
-uint32_t last_heartbeat = 0;
-const uint32_t HEARTBEAT_MS = 60;
+const uint32_t HEARTBEAT_US = 60000;
+const uint32_t MAX_SLEEP = 20000;
+const uint32_t UPDATE_US = 20000;
 
 _Device _device;
 
+std::mutex m_update;
 std::mutex m_suspend;
 std::condition_variable cv_suspend;
 
@@ -95,33 +95,39 @@ std::atomic<uint32_t> current_loop(0);
 // Elapsed time of the arduino in microseconds
 uint64_t
 get_elapsed_millis() {
-  return round(_device.get_micros()/1000);
+  return round(_device.get_micros() / 1000);
 }
 
 uint64_t
-expected_macro_ticks() {
+get_arduino_micros() {
+  return _device.get_micros();
+}
+
+
+uint64_t
+wall_time_micros() {
   static uint32_t starting_clock = 0;
 
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC_COARSE, &t);
 
-  uint32_t real_ms_ticks = (t.tv_sec * 1000 + (t.tv_nsec / 1000000));
+  uint32_t real_us_ticks = (t.tv_sec * 1000000 + (t.tv_nsec / 1000));
 
   if (starting_clock == 0) {
-    starting_clock = real_ms_ticks - get_elapsed_millis();
+    starting_clock = real_us_ticks - get_arduino_micros();
   }
-  return real_ms_ticks - starting_clock;
+  return real_us_ticks - starting_clock;
 }
 
 // Write to the output pipe
 // Add a 5 us delay to stop data corruption from spamming the command line gui
 void
 write_to_updates(const void* buf, size_t count, bool should_suspend = false) {
-  if (should_suspend && _sim::fast_mode) {
+  if (should_suspend) {
     suspend = true;
   }
+  std::unique_lock<std::mutex> lk(m_update);
   write(updates_fd, buf, count);
-  // std::this_thread::sleep_for(std::chrono::microseconds(5));
 }
 
 
@@ -214,7 +220,7 @@ check_random_updates() {
             "[{ \"type\": \"random_state\", \"ticks\": %" PRIu64 ", \"data\": { \"exceeded\": %s }}]\n",
             get_elapsed_millis(), exceeded ? "true" : "false");
 
-    write_to_updates(json, json_ptr - json, true);
+    write_to_updates(json, json_ptr - json, false);
 
     exceeded_prev = exceeded;
   }
@@ -251,7 +257,7 @@ check_marker_failure_updates() {
     buffer_destroy(category_buf);
     buffer_destroy(message_buf);
 
-    write_to_updates(json, json_ptr - json, true);
+    write_to_updates(json, json_ptr - json, false);
 
     set_marker_failure_event(nullptr, nullptr);
   }
@@ -267,9 +273,10 @@ write_heartbeat() {
   appendf(&json_ptr, json_end,
           "[{ \"type\": \"arduino_heartbeat\", \"ticks\": %" PRIu64 ", \"data\": { \"real_ticks\": \"%" PRIu64 "\" "
           "}}]\n",
-          get_elapsed_millis(), expected_macro_ticks());
+          get_elapsed_millis(), wall_time_micros() / 1000);
 
-  write_to_updates(json, json_ptr - json, true);
+  write_to_updates(json, json_ptr - json, false);
+
 }
 
 void
@@ -280,9 +287,9 @@ write_bye() {
 
   appendf(&json_ptr, json_end,
           "[{ \"type\": \"arduino_bye\", \"ticks\": %" PRIu64 ", \"data\": { \"real_ticks\": \"%" PRIu64 "\" }}]\n",
-          get_elapsed_millis(), expected_macro_ticks());
+          get_elapsed_millis(), wall_time_micros() / 1000);
 
-  write_to_updates(json, json_ptr - json, false);
+  write_to_updates(json, json_ptr - json, true);
 }
 
 
@@ -472,47 +479,73 @@ setup_output_pipe() {
 // Fires the hardware timer and periodically updates LED & GPIO state.
 // Takes the number of ticks since the last call, and returns the number of ticks
 // until the next call.
-uint32_t
-handle_timerfd_event(uint32_t ticks) {
-  static uint32_t micros_last_update = 0;
-  if (get_elapsed_millis() != micros_last_update) {
+void
+arduino_check_for_changes() {
+  static uint32_t last_update_us = 0;
+  static uint64_t last_heartbeat = 0;
+  uint64_t curr_micros = get_arduino_micros();
+
+  if (curr_micros > last_update_us + UPDATE_US) {
     send_pin_update();
     check_random_updates();
     check_marker_failure_updates();
-
-    micros_last_update = get_elapsed_millis();
+    last_update_us = curr_micros;
   }
 
   // Periodically heartbeat if the '-t' flag is enabled.
   // This is useful for the marker to ensure that it sees an event at least every N ticks.
-  if (heartbeat_mode && get_elapsed_millis() >= last_heartbeat + HEARTBEAT_MS) {
-    last_heartbeat = get_elapsed_millis();
+  if (heartbeat_mode && (curr_micros > (last_heartbeat + HEARTBEAT_US))) {
+    last_heartbeat = curr_micros;
     write_heartbeat();
-    std::cout << "write_heartbeat" << std::endl;
   }
-
-  return ticks;
 }
 
+void sleep_and_update(uint32_t us) {
+  _device.increment_counter(us);
+  uint64_t arduino_time = get_arduino_micros();
+  uint64_t wall_time = wall_time_micros();
+  if (!fast_mode) {
+    while(wall_time < arduino_time) {
+      std::this_thread::sleep_for(std::chrono::microseconds(5000));
+      wall_time = wall_time_micros();
+    }
+  }
+  arduino_check_for_changes();
+}
+
+void increment_arduino(uint32_t us) {
+  // uint32_t arduino_time = get_arduino_micros();
+  // uint32_t target_time = arduino_time + us;
+
+  if (us > MAX_SLEEP) {
+    uint32_t d = us / MAX_SLEEP;
+    uint32_t r = us % MAX_SLEEP;
+    while (d) {
+      sleep_and_update(MAX_SLEEP);
+      d--;
+    }
+    if (r) {
+      sleep_and_update(r);
+    }
+  } else {
+    sleep_and_update(us);
+  }
+}
 
 } // namespace
 
 // Run the Arduino code
 void
 run_code() {
-  uint32_t loops_before_pause = 10;
-  uint16_t sleep_time = 10;
+  _sim::increment_arduino(1032); // takes 1032 us for setup to run
   setup();
-  _sim::increment_counter(1032); // takes 1032 us for setup to run
   while (_sim::running) {
     _sim::current_loop++;
     loop();
-    _sim::check_suspend();
-    _sim::check_shutdown();
-    if (_sim::current_loop % loops_before_pause == 0 || _sim::time_since_sleep > 2000) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
-      _sim::last_sleep_us = _sim::get_elapsed_millis();
-      _sim::time_since_sleep = 0;
+    if (_sim::current_loop % 100 == 0) {
+      _sim::increment_arduino(10);
+    } else {
+      _sim::increment_arduino(0);
     }
   }
 }
@@ -565,9 +598,7 @@ main_thread() {
   timer_spec.it_interval.tv_nsec = 0;
   timer_spec.it_value.tv_sec = 0;
   timer_spec.it_value.tv_nsec = 16000 * 75;
-  if (!_sim::fast_mode) {
-    timerfd_settime(timer_fd, 0, &timer_spec, NULL);
-  }
+  timerfd_settime(timer_fd, 0, &timer_spec, NULL);
 
   // Open the events pipe.
   char* client_pipe_str = getenv("GROK_CLIENT_PIPE");
@@ -601,8 +632,6 @@ main_thread() {
     }
   }
 
-  // How long until we next need the timer callback to fire (in ticks).
-  uint32_t us_until_timer_fire = 60000;
 
   int epoll_timeout = 50;
   while (!_sim::shutdown) {
@@ -640,28 +669,6 @@ main_thread() {
       } else if (events[n].data.fd == client_fd) {
         // A write happened to the client events pipe.
         _sim::process_client_event(client_fd);
-      } else if (events[n].data.fd == timer_fd) {
-        // int status = read(timer_fd, &t, sizeof(uint64_t));
-
-        // Call the timer, telling it how many ticks have elapsed since the last call.
-        // It returns the number of ticks until the next call.
-        us_until_timer_fire = _sim::handle_timerfd_event(us_until_timer_fire);
-
-        // Figure out how long to set the timerfd for. One tick is 16us.
-        uint32_t sleep_nsec = 1000 * us_until_timer_fire;
-
-        // But scale so that we converge on 'real' time.
-        uint64_t e = _sim::expected_macro_ticks();
-        if (_sim::get_elapsed_millis() > e) {
-          sleep_nsec = (sleep_nsec * 11) / 10;
-        } else if (_sim::get_elapsed_millis() < e) {
-          uint32_t d = std::min(static_cast<uint64_t>(9), e - _sim::get_elapsed_millis());
-          sleep_nsec = (sleep_nsec * (10 - d)) / 10;
-        }
-
-        // Reset the timer_fd.
-        timer_spec.it_value.tv_nsec = sleep_nsec;
-        timerfd_settime(timer_fd, 0, &timer_spec, NULL);
       }
     }
   }
