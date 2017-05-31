@@ -151,7 +151,7 @@ void _Device::set_pwm_high_time(int pin, uint32_t a_write) {
     _pins[pin]._is_pwm = true;
     _pins[pin]._state = GPIO_PIN_OUTPUT_PWM;
   }
-  uint32_t high_time = _pins[pin]._pwm_period * ((float)a_write / 255.0);
+  uint32_t high_time = _pins[pin]._pwm_period * (static_cast<float>(a_write) / 255.0);
   _pins[pin]._pwm_high_time = high_time;
 }
 
@@ -180,7 +180,6 @@ void _Device::default_pwm_period(int pin) {
 }
 
 void _Device::set_digital(int pin, int level) {
-  std::cout << "setting digital" << std::endl;
   set_output(pin);
   std::lock_guard<std::mutex> lk(_m_pins);
   _pins[pin]._state = (level == LOW) ? GPIO_PIN_OUTPUT_LOW : GPIO_PIN_OUTPUT_HIGH;
