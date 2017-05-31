@@ -43,6 +43,7 @@ void analogWrite(int pin, byte value) {
     _sim::increment_counter(1);
     return;
   }
+
   pinMode(pin, OUTPUT);
   if (value == 0)
     digitalWrite(pin, LOW);
