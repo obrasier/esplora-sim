@@ -443,7 +443,7 @@ process_client_json(const json_value* json) {
   }
 }
 
-//
+// takes in a client json, and decides if it is actually a json
 void
 process_client_event(int fd) {
   char buf[10240];
@@ -473,9 +473,6 @@ process_client_event(int fd) {
   }
 }
 
-
-
-
 // Setup the output pipe
 void
 setup_output_pipe() {
@@ -488,10 +485,7 @@ setup_output_pipe() {
   }
 }
 
-// Called when the timerfd fires.
-// Fires the hardware timer and periodically updates LED & GPIO state.
-// Takes the number of ticks since the last call, and returns the number of ticks
-// until the next call.
+// updates checks if we need to update the device yet, and writes heartbeats for the marker
 void
 arduino_check_for_changes() {
   static uint32_t last_update_us = 0;
@@ -513,6 +507,7 @@ arduino_check_for_changes() {
   }
 }
 
+// Keeps track of the wall time so Arduino stays in sync in normal mode
 void sleep_and_update(uint32_t us) {
   _device.increment_counter(us);
   uint64_t arduino_time = get_arduino_micros();
@@ -526,10 +521,8 @@ void sleep_and_update(uint32_t us) {
   arduino_check_for_changes();
 }
 
+// increment the arduino by a small amount each time, up to us
 void increment_arduino(uint32_t us) {
-  // uint32_t arduino_time = get_arduino_micros();
-  // uint32_t target_time = arduino_time + us;
-
   if (us > MAX_SLEEP) {
     uint32_t d = us / MAX_SLEEP;
     uint32_t r = us % MAX_SLEEP;
@@ -739,6 +732,7 @@ main(int argc, char** argv) {
   sigemptyset(&handle_sigint.sa_mask);
   handle_sigint.sa_flags = 0;
   sigaction(SIGINT, &handle_sigint, NULL);
+
 
   // setup
   _sim::setup_output_pipe();

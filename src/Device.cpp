@@ -21,7 +21,6 @@
 #include <iostream>
 #include <cmath>
 
-const uint32_t SYNC_OFFSET_US = 10000;
 
 double dmap(double val, double x1, double x2, double y1, double y2) {
   return (val - x1) * (y2 - y1) / (x2 - x1) + y1;
@@ -103,6 +102,9 @@ int _Device::get_mux_value(int pin) {
 
 
 void _Device::set_pin_mode(int pin, int mode) {
+  int curr_mode = get_pin_mode(pin);
+  if (curr_mode == mode)
+    return;
   std::lock_guard<std::mutex> lk(_m_pins);
   switch (mode) {
     case INPUT:
@@ -178,6 +180,7 @@ void _Device::default_pwm_period(int pin) {
 }
 
 void _Device::set_digital(int pin, int level) {
+  std::cout << "setting digital" << std::endl;
   set_output(pin);
   std::lock_guard<std::mutex> lk(_m_pins);
   _pins[pin]._state = (level == LOW) ? GPIO_PIN_OUTPUT_LOW : GPIO_PIN_OUTPUT_HIGH;
@@ -292,13 +295,6 @@ check_shutdown() {
   }
 }
 
-void check_sync() {
-  uint32_t wall_time_us = wall_time_micros();
-  uint32_t arduino_time_us = _device.get_micros();
-  if (!fast_mode && arduino_time_us > wall_time_us + SYNC_OFFSET_US) {
-    suspend = true;
-  }
-}
 
 void
 increment_counter(int us) {
