@@ -1,8 +1,10 @@
 #include <Esplora.h>
 void setup() {}
 void loop() {
-  Esplora.writeRed(255);
-  delay(1000);
-  Esplora.writeRed(200);
-  delay(1000);
+  if (Esplora.readButton(1) == LOW) {
+    Esplora.writeRed(255);
+  }
+  else {
+    Esplora.writeRed(0);
+  }
 }

@@ -92,6 +92,7 @@ std::atomic<bool> running(true);
 
 // File descriptor to write ___device_updates.
 int updates_fd = -1;
+int client_fd = -1;
 
 // current loop number
 std::atomic<uint32_t> current_loop(0);
@@ -240,6 +241,7 @@ check_marker_failure_updates() {
 
 void
 write_heartbeat() {
+
   char json[1024];
   char* json_ptr = json;
   char* json_end = json + sizeof(json);
@@ -457,41 +459,6 @@ setup_output_pipe() {
   }
 }
 
-// updates checks if we need to update the device yet, and writes heartbeats for the marker
-void
-arduino_check_for_changes() {
-  static uint32_t last_update_us = 0;
-  static uint64_t last_heartbeat = 0;
-  uint64_t curr_micros = get_arduino_micros();
-
-  if (curr_micros > last_update_us + UPDATE_US) {
-    send_pin_update();
-    check_random_updates();
-    check_marker_failure_updates();
-    last_update_us = curr_micros;
-  }
-
-  // Periodically heartbeat if the '-t' flag is enabled.
-  // This is useful for the marker to ensure that it sees an event at least every N ticks.
-  if (heartbeat_mode && (curr_micros > (last_heartbeat + HEARTBEAT_US))) {
-    last_heartbeat = curr_micros;
-    write_heartbeat();
-  }
-}
-
-// Keeps track of the wall time so Arduino stays in sync in normal mode
-void sleep_and_update(uint32_t us) {
-  _device.increment_counter(us);
-  uint64_t arduino_time = get_arduino_micros();
-  uint64_t wall_time = wall_time_micros();
-  if (!fast_mode) {
-    while(wall_time < arduino_time) {
-      std::this_thread::sleep_for(std::chrono::microseconds(5000));
-      wall_time = wall_time_micros();
-    }
-  }
-  arduino_check_for_changes();
-}
 
 // check the suspend flag, if suspend is false, then continue
 // otherwise wait for the condition variable, cv_suspend
@@ -513,6 +480,50 @@ check_shutdown() {
     send_updates = false;
   }
 }
+
+// updates checks if we need to update the device yet, and writes heartbeats for the marker
+void
+arduino_check_for_changes() {
+  static uint32_t last_update_us = 0;
+  static uint64_t last_heartbeat = 0;
+  uint64_t curr_micros = get_arduino_micros();
+
+  if (curr_micros > last_update_us + UPDATE_US) {
+    send_pin_update();
+    check_random_updates();
+    check_marker_failure_updates();
+    last_update_us = curr_micros;
+  }
+
+  // Periodically heartbeat if the '-t' flag is enabled.
+  // This is useful for the marker to ensure that it sees an event at least every N ticks.
+  if ((curr_micros > (last_heartbeat + HEARTBEAT_US))) {
+    process_client_event(client_fd);
+    check_suspend();
+    check_shutdown();
+    last_heartbeat = curr_micros;
+    if (heartbeat_mode)
+      write_heartbeat();
+  }
+}
+
+
+
+
+// Keeps track of the wall time so Arduino stays in sync in normal mode
+void sleep_and_update(uint32_t us) {
+  _device.increment_counter(us);
+  uint64_t arduino_time = get_arduino_micros();
+  uint64_t wall_time = wall_time_micros();
+  if (!fast_mode) {
+    while (wall_time < arduino_time) {
+      std::this_thread::sleep_for(std::chrono::microseconds(5000));
+      wall_time = wall_time_micros();
+    }
+  }
+  arduino_check_for_changes();
+}
+
 
 } // namespace
 
@@ -557,8 +568,6 @@ increment_counter(int us) {
     sleep_and_update(d);
     us -= d;
   }
-  check_suspend();
-  check_shutdown();
 }
 
 } // namespace _sim
@@ -633,81 +642,81 @@ main_thread() {
 
   // Open the events pipe.
   char* client_pipe_str = getenv("GROK_CLIENT_PIPE");
-  int client_fd = -1;
-  int notify_fd = -1;
-  int client_wd = -1;
+  // int notify_fd = -1;
+  // int client_wd = -1;
   if (client_pipe_str != NULL) {
-    client_fd = atoi(client_pipe_str);
-    fcntl(client_fd, F_SETFL, fcntl(client_fd, F_GETFL, 0) | O_NONBLOCK);
-    struct epoll_event ev_client_pipe;
-    ev_client_pipe.events = EPOLLIN;
-    ev_client_pipe.data.fd = client_fd;
-    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev_client_pipe);
+    _sim::client_fd = atoi(client_pipe_str);
+    fcntl(_sim::client_fd, F_SETFL, fcntl(_sim::client_fd, F_GETFL, 0) | O_NONBLOCK);
+    // struct epoll_event ev_client_pipe;
+    // ev_client_pipe.events = EPOLLIN;
+    // ev_client_pipe.data.fd = client_fd;
+    // epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev_client_pipe);
   } else {
     // Create and truncate the client events file.
-    client_fd = open("___client_events", O_CREAT | O_TRUNC | O_RDONLY, S_IRUSR | S_IWUSR);
+    _sim::client_fd = open("___client_events", O_CREAT | O_TRUNC | O_RDONLY, S_IRUSR | S_IWUSR);
 
-    // Set up a notify for the file and add to epoll set.
-    struct epoll_event ev_client;
-    notify_fd = inotify_init1(0);
-    client_wd = inotify_add_watch(notify_fd, "___client_events", IN_MODIFY);
-    if (client_wd == -1) {
-      perror("add watch");
-      return;
-    }
-    ev_client.events = EPOLLIN;
-    ev_client.data.fd = notify_fd;
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, notify_fd, &ev_client) == -1) {
-      perror("epoll_ctl");
-      return;
-    }
+    // // Set up a notify for the file and add to epoll set.
+    // struct epoll_event ev_client;
+    // notify_fd = inotify_init1(0);
+    // client_wd = inotify_add_watch(notify_fd, "___client_events", IN_MODIFY);
+    // if (client_wd == -1) {
+    //   perror("add watch");
+    //   return;
+    // }
+    // ev_client.events = EPOLLIN;
+    // ev_client.data.fd = notify_fd;
+    // if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, notify_fd, &ev_client) == -1) {
+    //   perror("epoll_ctl");
+    //   return;
+    // }
   }
 
 
   int epoll_timeout = 50;
-  while (!_sim::shutdown) {
-    struct epoll_event events[MAX_EVENTS];
-    int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, epoll_timeout);
+  // while (!_sim::shutdown) {
+  //   struct epoll_event events[MAX_EVENTS];
+  //   int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, epoll_timeout);
 
-    if (nfds == -1) {
-      if (errno == EINTR) {
-        // Timeout or interrupted.
-        // Allow the vm branch hook to proceed.
-        // Continue so that we'll catch the shutdown flag above (if it's set, otherwise continue as
-        // normal).
-        continue;
-      }
-      perror("epoll wait\n");
-      exit(1);
-    }
+  //   if (nfds == -1) {
+  //     if (errno == EINTR) {
+  //       // Timeout or interrupted.
+  //       // Allow the vm branch hook to proceed.
+  //       // Continue so that we'll catch the shutdown flag above (if it's set, otherwise continue as
+  //       // normal).
+  //       continue;
+  //     }
+  //     perror("epoll wait\n");
+  //     exit(1);
+  //   }
 
-    for (int n = 0; n < nfds; ++n) {
-      if (notify_fd != -1 && events[n].data.fd == notify_fd) {
-        // A change occured to the ___client_events file.
-        uint8_t buf[4096] __attribute__((aligned(__alignof__(inotify_event))));
-        ssize_t len = read(notify_fd, buf, sizeof(buf));
-        if (len == -1) {
-          continue;
-        }
+  //   for (int n = 0; n < nfds; ++n) {
+  //     if (notify_fd != -1 && events[n].data.fd == notify_fd) {
+  //       // A change occured to the ___client_events file.
+  //       uint8_t buf[4096] __attribute__((aligned(__alignof__(inotify_event))));
+  //       ssize_t len = read(notify_fd, buf, sizeof(buf));
+  //       if (len == -1) {
+  //         continue;
+  //       }
 
-        const struct inotify_event* event;
-        for (uint8_t* p = buf; p < buf + len; p += sizeof(inotify_event) + event->len) {
-          event = reinterpret_cast<inotify_event*>(p);
-          if (event->wd == client_wd) {
-            _sim::process_client_event(client_fd);
-          }
-        }
-      } else if (events[n].data.fd == client_fd) {
-        // A write happened to the client events pipe.
-        _sim::process_client_event(client_fd);
-      }
-    }
-  }
+  //       const struct inotify_event* event;
+  //       for (uint8_t* p = buf; p < buf + len; p += sizeof(inotify_event) + event->len) {
+  //         event = reinterpret_cast<inotify_event*>(p);
+  //         if (event->wd == client_wd) {
+  //           _sim::process_client_event(client_fd);
+  //         }
+  //       }
+  //     } else if (events[n].data.fd == client_fd) {
+  //       // A write happened to the client events pipe.
+  //       _sim::process_client_event(client_fd);
+  //     }
+  //   }
+  // }
+  code_thread_main();
   _sim::write_bye();
-  if (notify_fd != -1) {
-    close(notify_fd);
-  }
-  close(client_fd);
+  // if (notify_fd != -1) {
+  //   close(notify_fd);
+  // }
+  close(_sim::client_fd);
   close(timer_fd);
 }
 
@@ -771,9 +780,9 @@ main(int argc, char** argv) {
     _sim::write_heartbeat();
   }
 
-  // run the code
-  std::thread code_thread(code_thread_main);
-  code_thread.detach();
+  // // run the code
+  // std::thread code_thread(code_thread_main);
+  // code_thread.detach();
 
   // start the main thread to read data
   main_thread();
