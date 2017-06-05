@@ -500,9 +500,14 @@ void sleep_and_update(uint32_t us) {
   uint64_t arduino_time = get_arduino_micros();
   uint64_t wall_time = wall_time_micros();
   if (!fast_mode) {
-    while(wall_time < arduino_time) {
-      std::this_thread::sleep_for(std::chrono::microseconds(5000));
-      wall_time = wall_time_micros();
+    if (wall_time > arduino_time) {
+      int32_t diff = wall_time - arduino_time;
+      _device.increment_counter(diff);
+    } else {
+      while (wall_time < arduino_time) {
+        std::this_thread::sleep_for(std::chrono::microseconds(5000));
+        wall_time = wall_time_micros();
+      }
     }
   }
   arduino_check_for_changes();
@@ -535,8 +540,8 @@ run_code() {
   while (_sim::running) {
     _sim::current_loop++;
     loop();
-    if (_sim::current_loop % 100 == 0) {
-      _sim::increment_arduino(10);
+    if (_sim::current_loop % 200 == 0) {
+      _sim::increment_arduino(500);
     } else {
       _sim::increment_arduino(0);
     }
