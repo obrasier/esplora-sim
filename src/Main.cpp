@@ -582,11 +582,7 @@ run_code() {
   while (_sim::running) {
     _sim::current_loop++;
     loop();
-    if (_sim::current_loop % 100 == 0) {
-      _sim::increment_counter(10);
-    } else {
-      _sim::increment_counter(0);
-    }
+    _sim::increment_counter(10);
   }
 }
 
