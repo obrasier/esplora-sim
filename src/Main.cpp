@@ -74,10 +74,6 @@ const int32_t HEARTBEAT_US = 60000;
 const int32_t MAX_SLEEP = 20000;
 const int32_t UPDATE_US = 20000;
 
-std::mutex m_update;
-std::mutex m_suspend;
-std::condition_variable cv_suspend;
-
 // tells the code thread to shutdown, suspend or operate in fast_mode
 std::atomic<bool> shutdown(false);
 std::atomic<bool> suspend(false);
@@ -104,7 +100,6 @@ write_to_updates(const void* buf, size_t count, bool should_suspend = false) {
   if (should_suspend) {
     suspend = true;
   }
-  std::unique_lock<std::mutex> lk(m_update);
   write(updates_fd, buf, count);
 }
 
@@ -171,7 +166,7 @@ void send_pin_update() {
     list_to_json("pwmp", &json_ptr, json_end, pwm_period, sizeof(pwm_period) / sizeof(int));
     appendf(&json_ptr, json_end, "}}]\n");
 
-    write_to_updates(json, json_ptr - json);
+    write_to_updates(json, json_ptr - json, true);
 
     memcpy(prev_pins, pins, sizeof(pins));
     memcpy(prev_pwm_high_time, pwm_high_time, sizeof(pwm_high_time));
@@ -195,7 +190,7 @@ check_random_updates() {
             "[{ \"type\": \"random_state\", \"ticks\": %" PRIu64 ", \"data\": { \"exceeded\": %s }}]\n",
             get_elapsed_millis(), exceeded ? "true" : "false");
 
-    write_to_updates(json, json_ptr - json, false);
+    write_to_updates(json, json_ptr - json, true);
 
     exceeded_prev = exceeded;
   }
@@ -232,7 +227,7 @@ check_marker_failure_updates() {
     buffer_destroy(category_buf);
     buffer_destroy(message_buf);
 
-    write_to_updates(json, json_ptr - json, false);
+    write_to_updates(json, json_ptr - json, true);
 
     set_marker_failure_event(nullptr, nullptr);
   }
@@ -251,7 +246,7 @@ write_heartbeat() {
           "}}]\n",
           get_elapsed_millis(), wall_time_micros() / 1000);
 
-  write_to_updates(json, json_ptr - json, false);
+  write_to_updates(json, json_ptr - json, true);
 
 }
 
@@ -278,7 +273,7 @@ write_bye() {
           "[{ \"type\": \"arduino_bye\", \"ticks\": %" PRIu64 ", \"data\": { \"real_ticks\": \"%" PRIu64 "\" }}]\n",
           get_elapsed_millis(), wall_time_micros() / 1000);
 
-  write_to_updates(json, json_ptr - json, true);
+  write_to_updates(json, json_ptr - json, false);
 }
 
 
@@ -293,7 +288,7 @@ write_event_ack(const char* event_type, const char* ack_data_json) {
           "[{ \"type\": \"arduino_ack\", \"ticks\": %" PRIu64 ", \"data\": { \"type\": \"%s\", \"data\": "
           "%s }}]\n",
           get_elapsed_millis(), event_type, ack_data_json ? ack_data_json : "{}");
-  write_to_updates(json, json_ptr - json);
+  write_to_updates(json, json_ptr - json, false);
 }
 
 // process a multiplexer event - the pins are as follows:
@@ -395,11 +390,8 @@ process_client_json(const json_value* json) {
       fprintf(stderr, "Event missing type and/or data.\n");
     } else {
       if (strncmp(event_type->as.string, "resume", 6) == 0) {
-        std::unique_lock<std::mutex> lk(m_suspend);
         suspend = false;
-        cv_suspend.notify_all();
       } else if (strncmp(event_type->as.string, "suspend", 7) == 0) {
-        std::unique_lock<std::mutex> lk(m_suspend);
         suspend = true;
       } else if (strncmp(event_type->as.string, "arduino_pin", 13) == 0) {
         // Something driving the GPIO pins.
@@ -467,8 +459,13 @@ setup_output_pipe() {
 // otherwise wait for the condition variable, cv_suspend
 void
 check_suspend() {
-  std::unique_lock<std::mutex> lk(m_suspend);
-  cv_suspend.wait(lk, [] {return suspend == false;});
+  if (!fast_mode) {
+    return;
+  }
+  while (suspend && !shutdown) {
+    process_client_event(client_fd);
+    std::this_thread::sleep_for(std::chrono::microseconds(1000));
+  }
 }
 
 // If we receive a shutdown signla
@@ -502,11 +499,10 @@ arduino_check_for_changes() {
   // This is useful for the marker to ensure that it sees an event at least every N ticks.
   if ((curr_micros > (last_heartbeat + HEARTBEAT_US))) {
     process_client_event(client_fd);
-    check_suspend();
-    check_shutdown();
     last_heartbeat = curr_micros;
-    if (heartbeat_mode)
+    if (heartbeat_mode) {
       write_heartbeat();
+    }
   }
 }
 
@@ -583,6 +579,8 @@ run_code() {
     _sim::current_loop++;
     loop();
     _sim::increment_counter(10);
+    _sim::check_suspend();
+    _sim::check_shutdown();
   }
 }
 
