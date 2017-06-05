@@ -422,6 +422,9 @@ void
 process_client_event(int fd) {
   char buf[10240];
   ssize_t len = read(fd, buf, sizeof(buf));
+  if (len == -1) {
+    return;
+  }
   if (len == sizeof(buf)) {
     fprintf(stderr, "Too much data in client event.\n");
     return;
@@ -506,9 +509,6 @@ arduino_check_for_changes() {
       write_heartbeat();
   }
 }
-
-
-
 
 // Keeps track of the wall time so Arduino stays in sync in normal mode
 void sleep_and_update(uint32_t us) {
@@ -598,129 +598,6 @@ sig_handler(int s __attribute__((unused))) {
   _sim::running = false;
 }
 
-// Setup the signal handler then run the code
-void
-code_thread_main() {
-  // handle SIGINTs
-  struct sigaction handle_sigint;
-  handle_sigint.sa_handler = sig_handler;
-  sigemptyset(&handle_sigint.sa_mask);
-  handle_sigint.sa_flags = 0;
-  sigaction(SIGINT, &handle_sigint, NULL);
-
-  // run the code
-  run_code();
-}
-
-
-
-
-void
-main_thread() {
-  const int MAX_EVENTS = 10;
-  int epoll_fd = epoll_create1(0);
-
-  // Add non-blocking stdin to epoll set.
-  struct epoll_event ev_stdin;
-  fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
-  ev_stdin.events = EPOLLIN;
-  ev_stdin.data.fd = STDIN_FILENO;
-  epoll_ctl(epoll_fd, EPOLL_CTL_ADD, STDIN_FILENO, &ev_stdin);
-
-  // Set up a timer for the ticker.
-  int timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
-  struct epoll_event ev_timer;
-  ev_timer.events = EPOLLIN;
-  ev_timer.data.fd = timer_fd;
-  epoll_ctl(epoll_fd, EPOLL_CTL_ADD, timer_fd, &ev_timer);
-  struct itimerspec timer_spec;
-  timer_spec.it_interval.tv_sec = 0;
-  timer_spec.it_interval.tv_nsec = 0;
-  timer_spec.it_value.tv_sec = 0;
-  timer_spec.it_value.tv_nsec = 16000 * 75;
-  timerfd_settime(timer_fd, 0, &timer_spec, NULL);
-
-  // Open the events pipe.
-  char* client_pipe_str = getenv("GROK_CLIENT_PIPE");
-  // int notify_fd = -1;
-  // int client_wd = -1;
-  if (client_pipe_str != NULL) {
-    _sim::client_fd = atoi(client_pipe_str);
-    fcntl(_sim::client_fd, F_SETFL, fcntl(_sim::client_fd, F_GETFL, 0) | O_NONBLOCK);
-    // struct epoll_event ev_client_pipe;
-    // ev_client_pipe.events = EPOLLIN;
-    // ev_client_pipe.data.fd = client_fd;
-    // epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev_client_pipe);
-  } else {
-    // Create and truncate the client events file.
-    _sim::client_fd = open("___client_events", O_CREAT | O_TRUNC | O_RDONLY, S_IRUSR | S_IWUSR);
-
-    // // Set up a notify for the file and add to epoll set.
-    // struct epoll_event ev_client;
-    // notify_fd = inotify_init1(0);
-    // client_wd = inotify_add_watch(notify_fd, "___client_events", IN_MODIFY);
-    // if (client_wd == -1) {
-    //   perror("add watch");
-    //   return;
-    // }
-    // ev_client.events = EPOLLIN;
-    // ev_client.data.fd = notify_fd;
-    // if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, notify_fd, &ev_client) == -1) {
-    //   perror("epoll_ctl");
-    //   return;
-    // }
-  }
-
-
-  int epoll_timeout = 50;
-  // while (!_sim::shutdown) {
-  //   struct epoll_event events[MAX_EVENTS];
-  //   int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, epoll_timeout);
-
-  //   if (nfds == -1) {
-  //     if (errno == EINTR) {
-  //       // Timeout or interrupted.
-  //       // Allow the vm branch hook to proceed.
-  //       // Continue so that we'll catch the shutdown flag above (if it's set, otherwise continue as
-  //       // normal).
-  //       continue;
-  //     }
-  //     perror("epoll wait\n");
-  //     exit(1);
-  //   }
-
-  //   for (int n = 0; n < nfds; ++n) {
-  //     if (notify_fd != -1 && events[n].data.fd == notify_fd) {
-  //       // A change occured to the ___client_events file.
-  //       uint8_t buf[4096] __attribute__((aligned(__alignof__(inotify_event))));
-  //       ssize_t len = read(notify_fd, buf, sizeof(buf));
-  //       if (len == -1) {
-  //         continue;
-  //       }
-
-  //       const struct inotify_event* event;
-  //       for (uint8_t* p = buf; p < buf + len; p += sizeof(inotify_event) + event->len) {
-  //         event = reinterpret_cast<inotify_event*>(p);
-  //         if (event->wd == client_wd) {
-  //           _sim::process_client_event(client_fd);
-  //         }
-  //       }
-  //     } else if (events[n].data.fd == client_fd) {
-  //       // A write happened to the client events pipe.
-  //       _sim::process_client_event(client_fd);
-  //     }
-  //   }
-  // }
-  code_thread_main();
-  _sim::write_bye();
-  // if (notify_fd != -1) {
-  //   close(notify_fd);
-  // }
-  close(_sim::client_fd);
-  close(timer_fd);
-}
-
-
 void show_help(char *s) {
   std::cout << "Usage:   " << s << " [-option] " << std::endl;
   std::cout << "option:  " << "-h  show help information" << std::endl;
@@ -762,15 +639,7 @@ main(int argc, char** argv) {
     }
   }
 
-  // ignore SIGINTs
-  struct sigaction handle_sigint;
-  handle_sigint.sa_handler = SIG_IGN;
-  sigemptyset(&handle_sigint.sa_mask);
-  handle_sigint.sa_flags = 0;
-  sigaction(SIGINT, &handle_sigint, NULL);
-
-
-  // setup
+  // setup updates_fd
   _sim::setup_output_pipe();
 
   // Let the UI know that the simulator has started (and compilation has finished).
@@ -780,12 +649,33 @@ main(int argc, char** argv) {
     _sim::write_heartbeat();
   }
 
-  // // run the code
-  // std::thread code_thread(code_thread_main);
-  // code_thread.detach();
+  // handle SIGINTs
+  struct sigaction handle_sigint;
+  handle_sigint.sa_handler = sig_handler;
+  sigemptyset(&handle_sigint.sa_mask);
+  handle_sigint.sa_flags = 0;
+  sigaction(SIGINT, &handle_sigint, NULL);
 
-  // start the main thread to read data
-  main_thread();
+
+  // Set non-blocking stdin.
+  fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
+
+  // Open the events pipe.
+  char* client_pipe_str = getenv("GROK_CLIENT_PIPE");
+  if (client_pipe_str != NULL) {
+    _sim::client_fd = atoi(client_pipe_str);
+    fcntl(_sim::client_fd, F_SETFL, fcntl(_sim::client_fd, F_GETFL, 0) | O_NONBLOCK);
+  } else {
+    // Create and truncate the client events file.
+    _sim::client_fd = open("___client_events", O_CREAT | O_TRUNC | O_RDONLY, S_IRUSR | S_IWUSR);
+  }
+
+  run_code();
+
+  _sim::write_bye();
+
+  close(_sim::client_fd);
   close(_sim::updates_fd);
+
   return EXIT_SUCCESS;
 }
