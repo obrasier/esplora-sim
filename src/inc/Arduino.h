@@ -77,7 +77,7 @@ void interrupts();
 void noInterrupts();
 
 #define digitalPinToPCICR(p)    ((((p) >= 8 && (p) <= 11) || ((p) >= 14 && (p) <= 17) || ((p) >= A8 && (p) <= A10)) ? (&PCICR) : ((uint8_t *)0))
-#define digitalPinToPCICRbit(p) 
+#define digitalPinToPCICRbit(p)
 #define digitalPinToPCMSK(p)    ((((p) >= 8 && (p) <= 11) || ((p) >= 14 && (p) <= 17) || ((p) >= A8 && (p) <= A10)) ? (&PCMSK0) : ((uint8_t *)0))
 #define digitalPinToPCMSKbit(p) {(((p) >= 8 && (p) <= 11) ? (p) - 4 : ((p) == 14 ? 3 : ((p) == 15 ? 1 : ((p) == 16 ? 2 : ((p) == 17 ? 0 : (p - A8 + 4))))))}
 
@@ -94,13 +94,6 @@ void noInterrupts();
 #define bitSet(value, bit) ((value) |= (1UL << (bit)))
 #define bitClear(value, bit) ((value) &= ~(1UL << (bit)))
 #define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
-
-
-namespace _sim {
-void send_pin_update();
-void send_led_update();
-void increment_counter(int us);
-}
 
 
 // // in sketch.ino

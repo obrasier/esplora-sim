@@ -62,13 +62,17 @@ _Esplora Esplora;
 // all the functions the simulator uses easily
 namespace _sim {
 
+_Device _device;
+
+uint64_t
+get_elapsed_millis();
+
+namespace {
 
 // When did we last write a heartbeat, in (if enabled in heartbeat_mode).
-const uint32_t HEARTBEAT_US = 60000;
-const uint32_t MAX_SLEEP = 20000;
-const uint32_t UPDATE_US = 20000;
-
-_Device _device;
+const int32_t HEARTBEAT_US = 60000;
+const int32_t MAX_SLEEP = 20000;
+const int32_t UPDATE_US = 20000;
 
 std::mutex m_update;
 std::mutex m_suspend;
@@ -92,33 +96,6 @@ int updates_fd = -1;
 // current loop number
 std::atomic<uint32_t> current_loop(0);
 
-// Elapsed time of the arduino in microseconds
-uint64_t
-get_elapsed_millis() {
-  return round(_device.get_micros() / 1000);
-}
-
-uint64_t
-get_arduino_micros() {
-  return _device.get_micros();
-}
-
-
-uint64_t
-wall_time_micros() {
-  static uint32_t starting_clock = 0;
-
-  struct timespec t;
-  clock_gettime(CLOCK_MONOTONIC_COARSE, &t);
-
-  uint32_t real_us_ticks = (t.tv_sec * 1000000 + (t.tv_nsec / 1000));
-
-  if (starting_clock == 0) {
-    starting_clock = real_us_ticks - get_arduino_micros();
-  }
-  return real_us_ticks - starting_clock;
-}
-
 // Write to the output pipe
 // Add a 5 us delay to stop data corruption from spamming the command line gui
 void
@@ -130,7 +107,6 @@ write_to_updates(const void* buf, size_t count, bool should_suspend = false) {
   write(updates_fd, buf, count);
 }
 
-
 void
 appendf(char** str, const char* end, const char* format, ...) {
   va_list args;
@@ -139,7 +115,6 @@ appendf(char** str, const char* end, const char* format, ...) {
   va_end(args);
   *str += min(end - *str, n);
 }
-
 
 // Generate json string from a list of ints.
 // {1,2,3} --> '"<field>:" [1,2,3]'
@@ -158,7 +133,6 @@ list_to_json(const char* field, char** json_ptr, char* json_end, int* values, si
     *(*json_ptr - 1) = ']';
   }
 }
-
 
 void send_pin_update() {
   static int prev_pins[NUM_PINS] = {0};
@@ -377,27 +351,25 @@ process_client_pins(const json_value* data) {
   write_event_ack("arduino_pin", ack_json);
 }
 
+// void
+// process_client_random(const json_value* data) {
+//   const json_value* next = json_value_get(data, "next");
+//   const json_value* repeat = json_value_get(data, "repeat");
+//   const json_value* choice_count = json_value_get(data, "choice_count");
+//   const json_value* choice_result = json_value_get(data, "choice_result");
+//   if (next && repeat && next->type == JSON_VALUE_TYPE_NUMBER &&
+//       repeat->type == JSON_VALUE_TYPE_NUMBER) {
+//     set_random_state(next->as.number, repeat->as.number);
+//   } else if (choice_count && choice_result && choice_count->type == JSON_VALUE_TYPE_NUMBER &&
+//              choice_result->type == JSON_VALUE_TYPE_STRING) {
+//     set_random_choice(choice_count->as.number, choice_result->as.string);
+//   } else {
+//     fprintf(stderr, "Random needs (next, repeat) or (choice_count, choice_result).\n");
+//     return;
+//   }
 
-void
-process_client_random(const json_value* data) {
-  const json_value* next = json_value_get(data, "next");
-  const json_value* repeat = json_value_get(data, "repeat");
-  const json_value* choice_count = json_value_get(data, "choice_count");
-  const json_value* choice_result = json_value_get(data, "choice_result");
-  if (next && repeat && next->type == JSON_VALUE_TYPE_NUMBER &&
-      repeat->type == JSON_VALUE_TYPE_NUMBER) {
-    set_random_state(next->as.number, repeat->as.number);
-  } else if (choice_count && choice_result && choice_count->type == JSON_VALUE_TYPE_NUMBER &&
-             choice_result->type == JSON_VALUE_TYPE_STRING) {
-    set_random_choice(choice_count->as.number, choice_result->as.string);
-  } else {
-    fprintf(stderr, "Random needs (next, repeat) or (choice_count, choice_result).\n");
-    return;
-  }
-
-  write_event_ack("random", nullptr);
-}
-
+//   write_event_ack("random", nullptr);
+// }
 
 // Handle an array of json events that we read from the pipe/file.
 // All json events are at a minimum:
@@ -521,37 +493,90 @@ void sleep_and_update(uint32_t us) {
   arduino_check_for_changes();
 }
 
-// increment the arduino by a small amount each time, up to us
-void increment_arduino(uint32_t us) {
-  if (us > MAX_SLEEP) {
-    uint32_t d = us / MAX_SLEEP;
-    uint32_t r = us % MAX_SLEEP;
-    while (d) {
-      sleep_and_update(MAX_SLEEP);
-      d--;
-    }
-    if (r) {
-      sleep_and_update(r);
-    }
-  } else {
-    sleep_and_update(us);
+// check the suspend flag, if suspend is false, then continue
+// otherwise wait for the condition variable, cv_suspend
+void
+check_suspend() {
+  std::unique_lock<std::mutex> lk(m_suspend);
+  cv_suspend.wait(lk, [] {return suspend == false;});
+}
+
+// If we receive a shutdown signla
+// send a final status update before
+// exiting, enables fast_mode so the loop will finish
+// without any delays
+void
+check_shutdown() {
+  if (shutdown) {
+    running = false;
+    fast_mode = true;
+    send_updates = false;
   }
 }
 
 } // namespace
 
+// Public _sim methods provided by Main.cpp:
+
+// Elapsed time of the arduino in microseconds
+uint64_t
+get_elapsed_millis() {
+  return round(_device.get_micros() / 1000);
+}
+
+uint64_t
+get_arduino_micros() {
+  return _device.get_micros();
+}
+
+uint64_t
+wall_time_micros() {
+  static uint32_t starting_clock = 0;
+
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC_COARSE, &t);
+
+  uint32_t real_us_ticks = (t.tv_sec * 1000000 + (t.tv_nsec / 1000));
+
+  if (starting_clock == 0) {
+    starting_clock = real_us_ticks - get_arduino_micros();
+  }
+  return real_us_ticks - starting_clock;
+}
+
+void force_pin_update() {
+  send_pin_update();
+}
+
+// Increment "arduino time" by the specified micros.
+// This is called all through Arduino.cpp/Esplora.cpp/Print.cpp to simulate operations taking time.
+void
+increment_counter(int us) {
+  while (us > 0) {
+    int d = min(MAX_SLEEP, us);
+    sleep_and_update(d);
+    us -= d;
+  }
+  check_suspend();
+  check_shutdown();
+}
+
+} // namespace _sim
+
+namespace {
+
 // Run the Arduino code
 void
 run_code() {
-  _sim::increment_arduino(1032); // takes 1032 us for setup to run
+  _sim::increment_counter(1032); // takes 1032 us for setup to run
   setup();
   while (_sim::running) {
     _sim::current_loop++;
     loop();
     if (_sim::current_loop % 100 == 0) {
-      _sim::increment_arduino(10);
+      _sim::increment_counter(10);
     } else {
-      _sim::increment_arduino(0);
+      _sim::increment_counter(0);
     }
   }
 }
@@ -696,6 +721,8 @@ void show_help(char *s) {
   std::cout << "         " << "-v  show version infomation" << std::endl;
   exit(0);
 }
+
+} // namespace
 
 int
 main(int argc, char** argv) {

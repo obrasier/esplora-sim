@@ -227,7 +227,7 @@ void _Device::set_tone(int pin, uint32_t freq) {
   _m_pins.unlock();
   set_pwm_period(pin, period);
   set_pwm_high_time(pin, freq);
-  _sim::send_pin_update();
+  _sim::force_pin_update();
 }
 
 bool _Device::is_tone(int pin) {
@@ -273,35 +273,6 @@ void _Device::set_output(int pin) {
 
 
 namespace _sim {
-// check the suspend flag, if suspend is false, then continue
-// otherwise wait for the condition variable, cv_suspend
-void
-check_suspend() {
-  std::unique_lock<std::mutex> lk(m_suspend);
-  cv_suspend.wait(lk, [] {return suspend == false;});
-}
-
-// If we receive a shutdown signla
-// send a final status update before
-// exiting, enables fast_mode so the loop will finish
-// without any delays
-void
-check_shutdown() {
-  if (shutdown) {
-    running = false;
-    fast_mode = true;
-    send_updates = false;
-  }
-}
-
-
-void
-increment_counter(int us) {
-  increment_arduino(us);
-  check_suspend();
-  check_shutdown();
-
-}
 
 volatile bool _inject_random = false;
 volatile int32_t _next_random = 0;

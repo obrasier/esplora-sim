@@ -20,7 +20,7 @@
 
 enum PinState {
   GPIO_PIN_OUTPUT_LOW = 0,
-  GPIO_PIN_OUTPUT_HIGH, 
+  GPIO_PIN_OUTPUT_HIGH,
   GPIO_PIN_OUTPUT_PWM,
   GPIO_PIN_INPUT_FLOATING,
   GPIO_PIN_INPUT_FLOATING_LOW,
@@ -33,22 +33,23 @@ enum PinState {
 };
 
 namespace _sim {
-void check_suspend();
-void check_shutdown();
+
+// in Main.cpp:
+// Advance "arduino time" by this many micros. Call this from any Arduino/Esplora API.
 void increment_counter(int us);
+// Force an immediate flush of pin/led state.
+void force_pin_update();
+// Timing where state is owned by Main.cpp.
+uint64_t get_elapsed_millis();
+uint64_t get_arduino_micros();
+uint64_t wall_time_micros();
 
-// in Main.cpp
-void send_pin_update();
-void send_led_update();
-
+// in Device.cpp:
 bool has_exceeded_random_call_limit();
 void set_random_choice(int32_t count, const char* result);
 void set_random_state(int32_t next, int32_t repeat);
 bool get_marker_failure_event(const char** category, const char** message);
 void set_marker_failure_event(const char* category, const char* message);
-void write_heartbeat();
-uint64_t wall_time_micros();
-void increment_arduino(uint32_t us);
 }
 
 struct MPin {

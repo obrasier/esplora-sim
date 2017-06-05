@@ -26,6 +26,7 @@
 #include <iostream>
 #include "wiring.h"
 #include "Arduino.h"
+#include "global_variables.h"
 
 #include "Print.h"
 

@@ -10,27 +10,9 @@
 #include <atomic>
 #include <string>
 
-
 namespace _sim {
-// shutdown the simulator
-extern std::atomic<bool> shutdown;
-
-// stop the arduino code running
-extern std::atomic<bool> running;
-
-// run the simulator in fast_mode
-extern std::atomic<bool> fast_mode;
-
-// send updates back to server or not
-extern std::atomic<bool> send_updates;
-
-// suspend the arduino code
-extern std::atomic<bool> suspend;
-extern std::mutex m_suspend;
-extern std::condition_variable cv_suspend;
-extern _Device _device;
-
-} 
+  extern _Device _device;
+}
 
 extern _Serial Serial;
 // extern _Serial Serial1;
