@@ -20,23 +20,27 @@ void _Serial::begin(unsigned long baud_rate) {
 
 
 void _Serial::end() {
-
 }
 
 // returns the number of bytes available to read
 // no bytes available, doesn't wait
 int _Serial::available() {
-  return 1;
+  _fill();
+  return _in != -1;
 }
 
-// the first byte of incoming serial data available 
+// the first byte of incoming serial data available
 // Data is never available
 int _Serial::read() {
-  return (-1);
+  _fill();
+  int x = _in;
+  _in = -1;
+  return x;
 }
 
 int _Serial::peek() {
-  return (-1);
+  _fill();
+  return _in;
 }
 
 void _Serial::write(uint8_t c) {
@@ -44,4 +48,14 @@ void _Serial::write(uint8_t c) {
 }
 
 void _Serial::flush() {
+}
+
+void _Serial::_fill() {
+  if (_in >= 0) {
+    return;
+  }
+  _in = getchar();
+  if (_in == EOF) {
+    _in = -1;
+  }
 }

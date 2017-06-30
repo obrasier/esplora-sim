@@ -10,7 +10,7 @@
 class _Serial : public Stream {
 
  public:
-  _Serial() {}
+ _Serial() : _in(-1) {}
   virtual void begin(unsigned long baud_rate);
   virtual void end();
   virtual int  available();
@@ -45,6 +45,9 @@ class _Serial : public Stream {
   // const int TX_LED = 30;
   // const int RX_LED = 17;
 
+  void _fill();
+
+  int _in;
 };
 
 extern _Serial Serial;
