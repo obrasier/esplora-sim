@@ -48,3 +48,4 @@ src/tags
 # Event files
 ___client_events
 ___device_updates
+.clang_complete
