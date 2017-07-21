@@ -585,11 +585,7 @@ run_code() {
     loop();
     _sim::check_suspend();
     _sim::check_shutdown();
-    if (_sim::current_loop % 100 == 0) {
-      _sim::increment_counter(10);
-    } else {
-      _sim::increment_counter(0);
-    }
+    _sim::increment_counter(1);
   }
 }
 
