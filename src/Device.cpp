@@ -216,16 +216,16 @@ uint32_t _Device::get_analog(int pin) {
 }
 
 void _Device::set_tone(int pin, uint32_t freq) {
-  uint32_t period = 0;
+  float period = 0;
   _m_pins.lock();
   if (freq != 0) {
-    period = 1000000 / freq;
+    period = std::round(1000000 / static_cast<float>(freq));
     _pins[pin]._is_tone = true;
   } else {
     _pins[pin]._is_tone = false;
   }
   _m_pins.unlock();
-  set_pwm_period(pin, period);
+  set_pwm_period(pin, static_cast<uint32_t>(period));
   set_pwm_high_time(pin, freq);
   _sim::force_pin_update();
 }
