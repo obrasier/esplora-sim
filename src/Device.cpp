@@ -47,7 +47,7 @@ _Device::_Device() {
     set_mux_voltage(elem, 5.0);
   set_mux_voltage(CH_JOYSTICK_SW, 5.0);
   set_mux_voltage(CH_TEMPERATURE, 0.75);
-  set_mux_voltage(CH_LIGHT, 5.0);
+  set_mux_voltage(CH_LIGHT, 0.92 * 5.0); // Default to 92% (typical for room lighting).
   set_mux_voltage(CH_MIC, 0.0);
 }
 
