@@ -564,6 +564,8 @@ void force_pin_update() {
 // This is called all through Arduino.cpp/Esplora.cpp/Print.cpp to simulate operations taking time.
 void
 increment_counter(int us) {
+  _sim::check_suspend();
+  _sim::check_shutdown();
   while (us > 0) {
     int d = min(MAX_SLEEP, us);
     sleep_and_update(d);
